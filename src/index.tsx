@@ -534,7 +534,7 @@ app.get('/api/search/facets', async (c) => {
 // ==================== TIME-LAPSE ENDPOINTS ====================
 app.post('/api/timelapse/generate', async (c) => {
   const { env } = c
-  const { analysis_ids, start_time, end_time, interval_seconds, animation_type } = await c.req.json()
+  const { analysis_ids, start_time, end_time, interval_seconds, animation_type, variable } = await c.req.json()
 
   if (!env.DB) return c.json({ error: 'Database not configured' }, 500)
 
@@ -581,13 +581,27 @@ app.post('/api/timelapse/generate', async (c) => {
     }
   })
 
+  // Generate animation frames with plot data
+  const enhancedFrames = frames.map((frame, idx) => ({
+    ...frame,
+    plot_data: {
+      reflectivity: Array.from({ length: 50 }, () => 
+        Array.from({ length: 50 }, () => 20 + Math.random() * 50 + Math.sin(idx / 3) * 10)
+      ),
+      velocity: Array.from({ length: 50 }, () => 
+        Array.from({ length: 50 }, () => -20 + Math.random() * 40)
+      )
+    }
+  }))
+  
   const animationConfig = {
     id: `timelapse_${Date.now()}`,
-    frames: frames,
+    frames: enhancedFrames,
     duration_seconds: frames.length * (interval_seconds || 1),
     fps: 10,
     options: {
-      animation_type: animation_type || 'reflectivity'
+      animation_type: animation_type || 'reflectivity',
+      variable: variable || 'Z'
     }
   }
 
@@ -595,10 +609,15 @@ app.post('/api/timelapse/generate', async (c) => {
     success: true,
     animation: {
       id: animationConfig.id,
-      frames: frames.length,
+      frames: enhancedFrames.length,
       duration_seconds: animationConfig.duration_seconds,
       created_at: new Date().toISOString(),
-      data: frames
+      data: enhancedFrames,
+      plot_config: {
+        colorscale: 'Viridis',
+        range: animation_type === 'reflectivity' ? [0, 70] : [-30, 30],
+        title: `${animation_type || 'Reflectivity'} Animation`
+      }
     }
   })
 })
@@ -886,16 +905,46 @@ app.post('/api/analyze', async (c) => {
     const formData = await c.req.formData()
     const file = formData.get('file') as File
     const variableName = formData.get('variable') as string || 'Z'
+    const timeRangeStart = formData.get('timeRangeStart') as string
+    const timeRangeEnd = formData.get('timeRangeEnd') as string
     
     if (!file) {
       return c.json({ error: 'No file provided' }, 400)
+    }
+    
+    // Generate time series data for plotting
+    const timeSteps = 12
+    const startTime = new Date()
+    startTime.setHours(startTime.getHours() - timeSteps * 4) // 4 hours per step
+    
+    // Generate plot data
+    const plotData = {
+      time_series: Array.from({ length: timeSteps }, (_, i) => {
+        const time = new Date(startTime)
+        time.setHours(time.getHours() + i * 4)
+        return {
+          time: time.toISOString(),
+          value: 30 + Math.random() * 40 + Math.sin(i / 2) * 10,
+          max_dbz: 45 + Math.random() * 30,
+          cell_count: Math.floor(1 + Math.random() * 5)
+        }
+      }),
+      spatial_data: {
+        lat: Array.from({ length: 50 }, () => 20 + Math.random() * 30),
+        lon: Array.from({ length: 50 }, () => -120 + Math.random() * 60),
+        values: Array.from({ length: 50 }, () => Array.from({ length: 50 }, () => Math.random() * 70))
+      },
+      histogram: {
+        bins: [0, 10, 20, 30, 40, 50, 60, 70, 80],
+        counts: [5, 12, 25, 35, 28, 15, 8, 3]
+      }
     }
     
     const simulatedData = {
       filename: file.name,
       size: file.size,
       variableName: variableName,
-      timeSteps: 12
+      timeSteps: timeSteps
     }
     
     const cellData = enhancedTracking(simulatedData, variableName)
@@ -910,10 +959,15 @@ app.post('/api/analyze', async (c) => {
         variable: variableName,
         processing_time: new Date().toISOString(),
         file_size_bytes: file.size,
-        is_authenticated: !!userId
+        is_authenticated: !!userId,
+        time_range: {
+          start: timeRangeStart || plotData.time_series[0].time,
+          end: timeRangeEnd || plotData.time_series[plotData.time_series.length - 1].time
+        }
       },
       cells: cellData.slice(0, 3),
-      ai_analysis: aiAnnotation
+      ai_analysis: aiAnnotation,
+      plot_data: plotData
     }
     
     // Store in database if available (for both authenticated and anonymous users)
@@ -1238,6 +1292,27 @@ app.get('/', (c) => {
                                 <div id="variableInfo" class="bg-gray-50 p-4 rounded-lg">
                                     <!-- Variable details will be shown here -->
                                 </div>
+                                
+                                <!-- Time Range Selection -->
+                                <div id="timeRangeSection" class="hidden space-y-3">
+                                    <label class="block text-sm font-medium text-gray-700">
+                                        <i class="fas fa-calendar-alt mr-1"></i>Select Time Range for Analysis
+                                    </label>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label class="text-xs text-gray-600">Start Time</label>
+                                            <select id="timeRangeStart" class="w-full px-3 py-2 border rounded text-sm">
+                                                <!-- Options will be added dynamically -->
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="text-xs text-gray-600">End Time</label>
+                                            <select id="timeRangeEnd" class="w-full px-3 py-2 border rounded text-sm">
+                                                <!-- Options will be added dynamically -->
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             
                             <button type="submit" id="analyzeButton"
@@ -1265,6 +1340,54 @@ app.get('/', (c) => {
                         
                         <div id="resultsSection" class="hidden">
                             <!-- Results will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Full-width Plots Section (below the two-column layout) -->
+                <div id="plotsSection" class="hidden mt-6">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h2 class="text-xl font-semibold mb-4 text-gray-800">
+                            <i class="fas fa-chart-line mr-2 text-blue-500"></i>
+                            Data Visualization & Analysis
+                        </h2>
+                        
+                        <!-- Plot Controls -->
+                        <div class="mb-4 flex gap-2">
+                            <button onclick="showPlot('timeseries')" class="plot-btn px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                                <i class="fas fa-chart-line mr-1"></i>Time Series
+                            </button>
+                            <button onclick="showPlot('spatial')" class="plot-btn px-3 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700">
+                                <i class="fas fa-map mr-1"></i>Spatial
+                            </button>
+                            <button onclick="showPlot('histogram')" class="plot-btn px-3 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700">
+                                <i class="fas fa-chart-bar mr-1"></i>Histogram
+                            </button>
+                            <button onclick="showPlot('animation')" class="plot-btn px-3 py-2 bg-purple-600 text-white text-sm rounded hover:bg-purple-700">
+                                <i class="fas fa-film mr-1"></i>Animation
+                            </button>
+                        </div>
+                        
+                        <!-- Plot Container -->
+                        <div id="plotContainer" style="width: 100%; height: 500px;">
+                            <!-- Plotly charts will be rendered here -->
+                        </div>
+                        
+                        <!-- Animation Controls -->
+                        <div id="animationControls" class="hidden mt-4 flex items-center gap-4">
+                            <button onclick="playAnimation()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                                <i class="fas fa-play mr-1"></i>Play
+                            </button>
+                            <button onclick="pauseAnimation()" class="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700">
+                                <i class="fas fa-pause mr-1"></i>Pause
+                            </button>
+                            <button onclick="resetAnimation()" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                                <i class="fas fa-redo mr-1"></i>Reset
+                            </button>
+                            <div class="flex-1">
+                                <input type="range" id="animationSlider" min="0" max="100" value="0" class="w-full">
+                            </div>
+                            <span id="frameIndicator" class="text-sm text-gray-600">Frame 1/12</span>
                         </div>
                     </div>
                 </div>
@@ -1528,6 +1651,7 @@ app.get('/', (c) => {
                 const variableSection = document.getElementById('variableSection');
                 const variableSelect = document.getElementById('variableSelect');
                 const variableInfo = document.getElementById('variableInfo');
+                const timeRangeSection = document.getElementById('timeRangeSection');
                 
                 // Clear previous options
                 variableSelect.innerHTML = '';
@@ -1542,6 +1666,44 @@ app.get('/', (c) => {
                     }
                     variableSelect.appendChild(option);
                 });
+                
+                // Populate time range selectors if temporal data exists
+                if (metadata.temporal && metadata.temporal.steps > 1) {
+                    const startSelect = document.getElementById('timeRangeStart');
+                    const endSelect = document.getElementById('timeRangeEnd');
+                    
+                    startSelect.innerHTML = '';
+                    endSelect.innerHTML = '';
+                    
+                    // Generate time options
+                    for (let i = 0; i < metadata.temporal.steps; i++) {
+                        const time = new Date(metadata.temporal.coverage.start);
+                        time.setHours(time.getHours() + i * (metadata.temporal.resolution_minutes / 60));
+                        const timeStr = time.toLocaleString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                        
+                        const startOption = document.createElement('option');
+                        startOption.value = time.toISOString();
+                        startOption.textContent = timeStr;
+                        if (i === 0) startOption.selected = true;
+                        startSelect.appendChild(startOption);
+                        
+                        const endOption = document.createElement('option');
+                        endOption.value = time.toISOString();
+                        endOption.textContent = timeStr;
+                        if (i === metadata.temporal.steps - 1) endOption.selected = true;
+                        endSelect.appendChild(endOption);
+                    }
+                    
+                    timeRangeSection.classList.remove('hidden');
+                } else {
+                    timeRangeSection.classList.add('hidden');
+                }
                 
                 // Display metadata with temporal information
                 const formatDate = (dateStr) => {
@@ -1728,13 +1890,20 @@ app.get('/', (c) => {
                 // Get selected variable
                 const variableSelect = document.getElementById('variableSelect');
                 const selectedVariable = variableSelect ? variableSelect.value : 'Z';
+                
+                // Get selected time range
+                const timeRangeStart = document.getElementById('timeRangeStart')?.value;
+                const timeRangeEnd = document.getElementById('timeRangeEnd')?.value;
 
                 document.getElementById('loadingSection').classList.remove('hidden');
                 document.getElementById('resultsSection').classList.add('hidden');
+                document.getElementById('plotsSection').classList.add('hidden');
 
                 const formData = new FormData();
                 formData.append('file', file);
                 formData.append('variable', selectedVariable);
+                if (timeRangeStart) formData.append('timeRangeStart', timeRangeStart);
+                if (timeRangeEnd) formData.append('timeRangeEnd', timeRangeEnd);
 
                 try {
                     const response = await fetch('/api/analyze', {
@@ -1745,6 +1914,12 @@ app.get('/', (c) => {
                     if (response.ok) {
                         currentAnalysisData = await response.json();
                         displayResults(currentAnalysisData);
+                        
+                        // Show plots section and create initial plot
+                        if (currentAnalysisData.plot_data) {
+                            document.getElementById('plotsSection').classList.remove('hidden');
+                            showPlot('timeseries');
+                        }
                         
                         // Store in session for anonymous users
                         if (!currentUser) {
@@ -2235,6 +2410,227 @@ app.get('/', (c) => {
                 
                 Plotly.newPlot('plot3DContainer', [trace3d], layout3d, config);
             }
+            
+            // Plotting functions
+            let animationInterval = null;
+            let currentFrame = 0;
+            let animationFrames = [];
+            
+            window.showPlot = function(type) {
+                if (!currentAnalysisData || !currentAnalysisData.plot_data) return;
+                
+                // Update button states
+                document.querySelectorAll('.plot-btn').forEach(btn => {
+                    btn.classList.remove('bg-blue-600');
+                    btn.classList.add('bg-gray-600');
+                });
+                
+                // Find and highlight the active button
+                const activeBtn = Array.from(document.querySelectorAll('.plot-btn')).find(btn => 
+                    btn.textContent.toLowerCase().includes(type.toLowerCase().replace('timeseries', 'time series'))
+                );
+                if (activeBtn) {
+                    activeBtn.classList.remove('bg-gray-600');
+                    activeBtn.classList.add('bg-blue-600');
+                }
+                
+                // Hide/show animation controls
+                const animControls = document.getElementById('animationControls');
+                if (type === 'animation') {
+                    animControls.classList.remove('hidden');
+                } else {
+                    animControls.classList.add('hidden');
+                    if (animationInterval) {
+                        clearInterval(animationInterval);
+                        animationInterval = null;
+                    }
+                }
+                
+                const plotContainer = document.getElementById('plotContainer');
+                
+                switch(type) {
+                    case 'timeseries':
+                        plotTimeSeries();
+                        break;
+                    case 'spatial':
+                        plotSpatial();
+                        break;
+                    case 'histogram':
+                        plotHistogram();
+                        break;
+                    case 'animation':
+                        initAnimation();
+                        break;
+                }
+            }
+            
+            function plotTimeSeries() {
+                const data = currentAnalysisData.plot_data.time_series;
+                
+                const trace1 = {
+                    x: data.map(d => d.time),
+                    y: data.map(d => d.value),
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    name: currentAnalysisData.metadata.variable || 'Variable',
+                    line: { color: 'rgb(55, 128, 191)', width: 2 }
+                };
+                
+                const trace2 = {
+                    x: data.map(d => d.time),
+                    y: data.map(d => d.max_dbz),
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    name: 'Max dBZ',
+                    yaxis: 'y2',
+                    line: { color: 'rgb(255, 127, 80)', width: 2 }
+                };
+                
+                const layout = {
+                    title: \`Time Series Analysis - \${currentAnalysisData.metadata.variable}\`,
+                    xaxis: {
+                        title: 'Time',
+                        type: 'date'
+                    },
+                    yaxis: {
+                        title: currentAnalysisData.metadata.variable + ' Value',
+                        side: 'left'
+                    },
+                    yaxis2: {
+                        title: 'Max dBZ',
+                        overlaying: 'y',
+                        side: 'right'
+                    },
+                    hovermode: 'x unified'
+                };
+                
+                Plotly.newPlot('plotContainer', [trace1, trace2], layout, {responsive: true});
+            }
+            
+            function plotSpatial() {
+                const spatialData = currentAnalysisData.plot_data.spatial_data;
+                
+                const trace = {
+                    type: 'heatmap',
+                    z: spatialData.values,
+                    colorscale: 'Viridis',
+                    colorbar: {
+                        title: currentAnalysisData.metadata.variable + ' (dBZ)'
+                    }
+                };
+                
+                const layout = {
+                    title: \`Spatial Distribution - \${currentAnalysisData.metadata.variable}\`,
+                    xaxis: { title: 'Longitude' },
+                    yaxis: { title: 'Latitude' },
+                    width: null,
+                    height: 500
+                };
+                
+                Plotly.newPlot('plotContainer', [trace], layout, {responsive: true});
+            }
+            
+            function plotHistogram() {
+                const histData = currentAnalysisData.plot_data.histogram;
+                
+                const trace = {
+                    x: histData.bins.slice(0, -1),
+                    y: histData.counts,
+                    type: 'bar',
+                    marker: {
+                        color: 'rgb(55, 128, 191)',
+                        line: {
+                            color: 'rgb(8,48,107)',
+                            width: 1.5
+                        }
+                    }
+                };
+                
+                const layout = {
+                    title: \`Value Distribution - \${currentAnalysisData.metadata.variable}\`,
+                    xaxis: { title: currentAnalysisData.metadata.variable + ' (dBZ)' },
+                    yaxis: { title: 'Frequency' },
+                    bargap: 0.05
+                };
+                
+                Plotly.newPlot('plotContainer', [trace], layout, {responsive: true});
+            }
+            
+            function initAnimation() {
+                if (!currentAnalysisData.plot_data.time_series) return;
+                
+                animationFrames = currentAnalysisData.plot_data.time_series;
+                currentFrame = 0;
+                updateAnimationFrame();
+            }
+            
+            function updateAnimationFrame() {
+                if (currentFrame >= animationFrames.length) currentFrame = 0;
+                
+                const frame = animationFrames[currentFrame];
+                const frameData = currentAnalysisData.plot_data.spatial_data;
+                
+                // Generate animated data based on frame
+                const animatedValues = frameData.values.map(row => 
+                    row.map(val => val * (0.8 + 0.4 * Math.sin(currentFrame / 3)))
+                );
+                
+                const trace = {
+                    type: 'heatmap',
+                    z: animatedValues,
+                    colorscale: 'Jet',
+                    colorbar: {
+                        title: 'Reflectivity (dBZ)'
+                    }
+                };
+                
+                const layout = {
+                    title: \`Animation Frame \${currentFrame + 1}/\${animationFrames.length} - \${new Date(frame.time).toLocaleString()}\`,
+                    xaxis: { title: 'X' },
+                    yaxis: { title: 'Y' }
+                };
+                
+                Plotly.newPlot('plotContainer', [trace], layout, {responsive: true});
+                
+                // Update slider and indicator
+                document.getElementById('animationSlider').value = (currentFrame / (animationFrames.length - 1)) * 100;
+                document.getElementById('frameIndicator').textContent = \`Frame \${currentFrame + 1}/\${animationFrames.length}\`;
+            }
+            
+            window.playAnimation = function() {
+                if (animationInterval) return;
+                
+                animationInterval = setInterval(() => {
+                    currentFrame++;
+                    if (currentFrame >= animationFrames.length) currentFrame = 0;
+                    updateAnimationFrame();
+                }, 500); // 2 fps
+            }
+            
+            window.pauseAnimation = function() {
+                if (animationInterval) {
+                    clearInterval(animationInterval);
+                    animationInterval = null;
+                }
+            }
+            
+            window.resetAnimation = function() {
+                pauseAnimation();
+                currentFrame = 0;
+                updateAnimationFrame();
+            }
+            
+            // Animation slider control
+            document.addEventListener('DOMContentLoaded', () => {
+                const slider = document.getElementById('animationSlider');
+                if (slider) {
+                    slider.addEventListener('input', (e) => {
+                        pauseAnimation();
+                        currentFrame = Math.floor((e.target.value / 100) * (animationFrames.length - 1));
+                        updateAnimationFrame();
+                    });
+                }
+            });
             
             // Initialize
             checkAuth();
