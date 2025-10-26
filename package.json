@@ -1,7 +1,15 @@
 {
   "name": "a-clat",
   "type": "module",
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "description": "AI-Assisted Convective Cell Annotator - Advanced atmospheric analysis application",
+  "author": "clevernat",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/clevernat/a-clat.git"
+  },
+  "keywords": ["weather", "atmospheric-science", "storm-tracking", "ai", "cloudflare"],
   "scripts": {
     "dev": "vite",
     "build": "vite build",

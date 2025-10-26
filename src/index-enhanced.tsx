@@ -167,7 +167,7 @@ function enhancedAnnotation(cellData: any[]) {
       max_mesh_mm: maxMESH,
       has_rotation: hasRotation
     },
-    genspark_agent: 'atmospheric-science-expert-v2'
+    ai_agent: 'clevernat-atmospheric-expert-v2'
   }
 }
 
@@ -414,7 +414,7 @@ app.get('/', (c) => {
                     A-CLAT
                 </h1>
                 <p class="text-xl text-gray-600">AI-Assisted Convective Cell Annotator</p>
-                <p class="text-sm text-gray-500 mt-2">Powered by Genspark Agent Intelligence v2</p>
+                <p class="text-sm text-gray-500 mt-2">Developed by clevernat</p>
             </header>
 
             <!-- Tab Navigation -->
@@ -574,7 +574,7 @@ app.get('/', (c) => {
             <!-- Footer -->
             <footer class="text-center mt-12 text-gray-500 text-sm">
                 <p>A-CLAT v2.0 | Enhanced Atmospheric Analysis with AI</p>
-                <p class="mt-2">Powered by Genspark Super Agent Ecosystem</p>
+                <p class="mt-2">© 2025 clevernat - Advanced Atmospheric Analysis</p>
             </footer>
         </div>
 
@@ -692,7 +692,7 @@ app.get('/', (c) => {
                         </div>
                         <div class="text-sm text-gray-500">
                             <i class="fas fa-robot mr-1"></i>
-                            Analysis by: \${classification.genspark_agent}
+                            Analysis by: \${classification.ai_agent}
                         </div>
                     </div>
                 \`;

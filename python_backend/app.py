@@ -71,12 +71,12 @@ def simulate_tracking(xr_data: Dict[str, Any], variable_name: str) -> List[Dict[
     
     return cells
 
-def annotate_life_cycle_with_genspark(cell_data_json: List[Dict[str, Any]]) -> Dict[str, Any]:
+def annotate_life_cycle_with_ai(cell_data_json: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
-    Uses Genspark internal agent capabilities to classify convective cells.
+    Uses clevernat AI capabilities to classify convective cells.
     This is a placeholder that simulates the AI classification process.
     
-    In production, this would interface with actual Genspark Super Agent APIs
+    Developed by clevernat - Advanced atmospheric pattern recognition
     for sophisticated atmospheric pattern recognition.
     
     Args:
@@ -166,7 +166,7 @@ def annotate_life_cycle_with_genspark(cell_data_json: List[Dict[str, Any]]) -> D
             'avg_height_km': avg_height,
             'total_volume_km3': total_volume
         },
-        'genspark_agent': 'atmospheric-science-expert-v1',
+        'ai_agent': 'clevernat-atmospheric-expert-v1',
         'timestamp': datetime.utcnow().isoformat()
     }
 
@@ -216,7 +216,7 @@ async def analyze_atmospheric_data(
         tracked_cells = simulate_tracking(simulated_data, variable)
         
         # Get AI classification
-        ai_analysis = annotate_life_cycle_with_genspark(tracked_cells)
+        ai_analysis = annotate_life_cycle_with_ai(tracked_cells)
         
         # Generate time series for top 3 cells
         top_cells = tracked_cells[:3]
@@ -269,7 +269,7 @@ async def analyze_atmospheric_data(
             },
             'cells': enhanced_cells,
             'ai_analysis': ai_analysis,
-            'processing_notes': 'Analysis completed using Genspark atmospheric science agent'
+            'processing_notes': 'Analysis completed using clevernat AI technology'
         }
         
         return JSONResponse(content=response)
