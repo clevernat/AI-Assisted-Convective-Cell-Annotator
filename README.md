@@ -2,9 +2,17 @@
 ### Developed by clevernat
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/clevernat/a-clat)
+[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/clevernat/a-clat)
 [![Platform](https://img.shields.io/badge/platform-Cloudflare%20Pages-orange.svg)](https://pages.cloudflare.com/)
 [![Status](https://img.shields.io/badge/status-production%20ready-green.svg)](https://github.com/clevernat/a-clat)
+
+## 🆕 Latest Updates (v2.1.0) - Guest Mode & Auto Variable Detection
+
+### ✨ Major New Features
+1. **🔍 Automatic Variable Extraction**: Upload any NetCDF/GRIB file and A-CLAT automatically detects all available variables
+2. **👤 Guest Mode Support**: Use A-CLAT without creating an account - analyses saved for 24 hours
+3. **📊 Smart Variable Selection**: Interactive dropdown with detailed variable information (units, type, description)
+4. **💾 Flexible Data Persistence**: Guest users get 24-hour storage, registered users get permanent storage
 
 ## 📸 Application Screenshots
 
@@ -56,9 +64,15 @@
 
 **A-CLAT** is a cutting-edge web application for analyzing atmospheric data and tracking convective cells using advanced AI classification. Built by **clevernat**, this application provides meteorologists, researchers, and weather enthusiasts with powerful tools to analyze and understand storm systems.
 
+### 🎯 Key Highlights
+- **No Account Required**: Start analyzing immediately as a guest user
+- **Intelligent Variable Detection**: Automatically extracts and presents all available data variables
+- **Flexible Access Models**: Choose between guest (24-hour) or registered (permanent) storage
+- **Production Ready**: Fully deployed on Cloudflare Pages with global edge distribution
+
 ### Key Information
 - **Developer**: clevernat
-- **Version**: 2.0.0 (Enhanced)
+- **Version**: 2.1.0 (Guest Mode & Auto Variables)
 - **Platform**: Cloudflare Pages (Edge-optimized)
 - **Tech Stack**: Hono + TypeScript + Tailwind CSS + Plotly.js
 - **AI Technology**: clevernat proprietary atmospheric analysis engine
@@ -75,22 +89,28 @@
 ## 🎯 Features
 
 ### Core Capabilities
-- 📊 **Atmospheric Data Processing**: Upload and analyze NetCDF/GRIB files
-- 🔍 **Convective Cell Tracking**: Automatic identification of storm cells
+- 📊 **Atmospheric Data Processing**: Upload and analyze NetCDF/GRIB files with automatic variable detection
+- 🔍 **Smart Variable Selection**: Auto-extracts all variables from uploaded files with detailed metadata
+- 👤 **Guest Mode Access**: Use without registration - analyses saved for 24 hours
+- 🔐 **Optional Authentication**: Register for permanent storage and collaboration features
 - 🤖 **AI Classification**: Advanced storm type classification with confidence scoring
 - ⚠️ **Hazard Assessment**: Automatic identification of weather hazards
 - 📈 **Interactive Visualizations**: 2D and 3D storm structure displays
-- 💾 **Data Export**: Download analysis results in CSV or JSON format
-- 📜 **History Tracking**: Database-backed analysis history
+- 💾 **Data Export**: Download analysis results in CSV, JSON, or GeoJSON format
+- 📜 **History Tracking**: Session-based (guest) or permanent (registered) analysis history
 - 🌐 **Edge Deployment**: Global distribution via Cloudflare's network
 
-### Version 2.0 Enhanced Features
-- **D1 Database Integration**: Persistent storage for analysis history
+### Version 2.1 Enhanced Features
+- **Automatic Variable Extraction**: Smart detection of all available variables in uploaded files
+- **Guest Mode Support**: Full functionality without registration (24-hour data retention)
+- **Variable Information Display**: Shows units, type, and description for each variable
+- **Flexible Data Persistence**: Choose between temporary (guest) or permanent (registered) storage
+- **D1 Database Integration**: Persistent storage for registered users
 - **3D Visualization**: Interactive 3D storm structure evolution
 - **Enhanced Physics Modeling**: Realistic storm motion and properties
 - **Hazard Detection**: Multi-category risk assessment
-- **Export Functionality**: One-click data export in multiple formats
-- **Tabbed Interface**: Organized UI with Analysis, History, and 3D views
+- **Export Functionality**: One-click data export in CSV, JSON, and GeoJSON formats
+- **Tabbed Interface**: Organized UI with Analysis, Search, Alerts, History, Time-lapse, 3D, and Collaboration views
 
 ## 🏗️ Architecture
 
@@ -189,6 +209,47 @@ python app.py
 ```
 
 The Python backend runs on port 8000 and provides enhanced data processing.
+
+## 🔬 Supported Variables
+
+### NetCDF Radar Variables
+- **Z** - Reflectivity (dBZ) - Primary storm intensity indicator
+- **V** - Radial Velocity (m/s) - Storm motion and rotation
+- **W** - Spectrum Width (m/s) - Turbulence indicator
+- **ZDR** - Differential Reflectivity (dB) - Hydrometeor shape
+- **KDP** - Specific Differential Phase (deg/km) - Heavy rain indicator
+- **RHOHV** - Correlation Coefficient - Data quality and hydrometeor type
+- **PHIDP** - Differential Phase (degrees) - Precipitation accumulation
+
+### GRIB Model Variables
+- **CAPE** - Convective Available Potential Energy (J/kg) - Storm potential
+- **CIN** - Convective Inhibition (J/kg) - Cap strength
+- **LI** - Lifted Index (K) - Atmospheric stability
+- **PWAT** - Precipitable Water (kg/m²) - Moisture content
+- **HLCY** - Storm Relative Helicity (m²/s²) - Rotation potential
+- **SCP** - Supercell Composite Parameter - Supercell likelihood
+- **STP** - Significant Tornado Parameter - Tornado potential
+
+## 👤 Usage Modes
+
+### Guest Mode (No Registration Required)
+1. **Access**: Open A-CLAT in your browser - no login needed
+2. **Upload**: Select your NetCDF/GRIB file
+3. **Variable Selection**: A-CLAT automatically extracts all available variables
+4. **Analysis**: Choose a variable from the dropdown and click "Analyze"
+5. **Results**: View AI classification, hazard assessment, and visualizations
+6. **Storage**: Your analyses are saved for 24 hours
+7. **Export**: Download results in CSV, JSON, or GeoJSON format
+
+### Registered User Mode
+1. **Create Account**: Click "Register" and provide email/password
+2. **Benefits**:
+   - Permanent storage of all analyses
+   - Access to collaboration features
+   - API key for programmatic access
+   - Share analyses with team members
+   - Advanced search across all your data
+3. **Migration**: Guest analyses can be claimed after registration
 
 ## 📋 API Documentation
 

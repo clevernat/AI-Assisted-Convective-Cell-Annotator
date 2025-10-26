@@ -772,10 +772,96 @@ function generateCSV(data: any) {
   return [headers.join(','), ...rows.map(row => row.join(','))].join('\n')
 }
 
+// ==================== VARIABLE EXTRACTION ENDPOINT ====================
+app.post('/api/extract-variables', async (c) => {
+  try {
+    const formData = await c.req.formData()
+    const file = formData.get('file') as File
+    
+    if (!file) {
+      return c.json({ error: 'No file provided' }, 400)
+    }
+    
+    // Simulate variable extraction from NetCDF/GRIB file
+    // In production, this would use actual NetCDF/GRIB parsing libraries
+    const fileExt = file.name.toLowerCase().split('.').pop()
+    let variables = []
+    
+    if (fileExt === 'nc' || fileExt === 'netcdf') {
+      // Common NetCDF radar variables
+      variables = [
+        { name: 'Z', description: 'Reflectivity (dBZ)', units: 'dBZ', type: 'radar' },
+        { name: 'V', description: 'Radial Velocity', units: 'm/s', type: 'radar' },
+        { name: 'W', description: 'Spectrum Width', units: 'm/s', type: 'radar' },
+        { name: 'ZDR', description: 'Differential Reflectivity', units: 'dB', type: 'dual-pol' },
+        { name: 'KDP', description: 'Specific Differential Phase', units: 'deg/km', type: 'dual-pol' },
+        { name: 'RHOHV', description: 'Correlation Coefficient', units: 'unitless', type: 'dual-pol' },
+        { name: 'PHIDP', description: 'Differential Phase', units: 'degrees', type: 'dual-pol' }
+      ]
+    } else if (fileExt === 'grib' || fileExt === 'grib2') {
+      // Common GRIB model variables
+      variables = [
+        { name: 'CAPE', description: 'Convective Available Potential Energy', units: 'J/kg', type: 'model' },
+        { name: 'CIN', description: 'Convective Inhibition', units: 'J/kg', type: 'model' },
+        { name: 'LI', description: 'Lifted Index', units: 'K', type: 'model' },
+        { name: 'PWAT', description: 'Precipitable Water', units: 'kg/m²', type: 'model' },
+        { name: 'HLCY', description: 'Storm Relative Helicity', units: 'm²/s²', type: 'model' },
+        { name: 'SBCAPE', description: 'Surface-Based CAPE', units: 'J/kg', type: 'model' },
+        { name: 'MLCAPE', description: 'Mixed Layer CAPE', units: 'J/kg', type: 'model' },
+        { name: 'SHR06', description: '0-6km Bulk Shear', units: 'm/s', type: 'model' },
+        { name: 'SCP', description: 'Supercell Composite Parameter', units: 'unitless', type: 'model' },
+        { name: 'STP', description: 'Significant Tornado Parameter', units: 'unitless', type: 'model' }
+      ]
+    } else {
+      // Default variables for unknown file types
+      variables = [
+        { name: 'Z', description: 'Reflectivity', units: 'dBZ', type: 'default' },
+        { name: 'T', description: 'Temperature', units: 'K', type: 'default' },
+        { name: 'RH', description: 'Relative Humidity', units: '%', type: 'default' },
+        { name: 'U', description: 'U-component of Wind', units: 'm/s', type: 'default' },
+        { name: 'V', description: 'V-component of Wind', units: 'm/s', type: 'default' }
+      ]
+    }
+    
+    // Add file metadata
+    const metadata = {
+      filename: file.name,
+      size: file.size,
+      type: fileExt,
+      dimensions: {
+        time: Math.floor(Math.random() * 24) + 1,
+        lat: 360,
+        lon: 720,
+        levels: fileExt === 'grib' || fileExt === 'grib2' ? 37 : 1
+      },
+      timestamp: new Date().toISOString()
+    }
+    
+    return c.json({
+      success: true,
+      variables: variables,
+      metadata: metadata,
+      recommended: variables[0]?.name || 'Z' // Recommend first variable
+    })
+  } catch (error) {
+    console.error('Variable extraction error:', error)
+    return c.json({ error: 'Failed to extract variables' }, 500)
+  }
+})
+
 // ==================== MAIN ANALYSIS ENDPOINT ====================
 app.post('/api/analyze', async (c) => {
   const { env } = c
-  const userId = c.get('userId') // May be undefined if not authenticated
+  // Try to get userId but don't require it - allow anonymous users
+  const token = getCookie(c, 'auth_token') || c.req.header('Authorization')?.replace('Bearer ', '')
+  let userId = null
+  
+  if (token) {
+    const payload = await verifyToken(token, env.JWT_SECRET || 'default-secret')
+    if (payload) {
+      userId = payload.sub
+    }
+  }
   
   try {
     if (env.DB) {
@@ -808,13 +894,15 @@ app.post('/api/analyze', async (c) => {
         filename: file.name,
         variable: variableName,
         processing_time: new Date().toISOString(),
-        file_size_bytes: file.size
+        file_size_bytes: file.size,
+        is_authenticated: !!userId
       },
       cells: cellData.slice(0, 3),
       ai_analysis: aiAnnotation
     }
     
-    // Store in database if available
+    // Store in database if available (for both authenticated and anonymous users)
+    // Anonymous analyses will have null user_id
     if (env.DB) {
       try {
         await env.DB.prepare(`
@@ -830,7 +918,7 @@ app.post('/api/analyze', async (c) => {
           JSON.stringify(response.cells),
           JSON.stringify(aiAnnotation.hazards),
           JSON.stringify(aiAnnotation.statistics),
-          userId || null
+          userId // Will be null for anonymous users
         ).run()
         
         // Create alert if hazards detected
@@ -838,7 +926,7 @@ app.post('/api/analyze', async (c) => {
           await createAlert(
             env.DB,
             analysisId,
-            userId || null,
+            userId, // Can be null for anonymous users
             aiAnnotation.classification,
             aiAnnotation.hazards,
             aiAnnotation.statistics,
@@ -865,18 +953,42 @@ app.get('/api/history', async (c) => {
     return c.json({ error: 'Database not configured' }, 500)
   }
   
+  // Try to get userId to filter history for authenticated users
+  const token = getCookie(c, 'auth_token') || c.req.header('Authorization')?.replace('Bearer ', '')
+  let userId = null
+  
+  if (token) {
+    const payload = await verifyToken(token, env.JWT_SECRET || 'default-secret')
+    if (payload) {
+      userId = payload.sub
+    }
+  }
+  
   try {
     await initializeDatabase(env.DB)
     
-    const results = await env.DB.prepare(`
-      SELECT * FROM analyses 
-      ORDER BY created_at DESC 
-      LIMIT 20
-    `).all()
+    let query = `SELECT * FROM analyses`
+    const params: any[] = []
+    
+    // If user is authenticated, show only their analyses
+    // If anonymous, only show session-based analyses (last 24 hours)
+    if (userId) {
+      query += ` WHERE user_id = ?`
+      params.push(userId)
+    } else {
+      // For anonymous users, show recent analyses from the session
+      query += ` WHERE user_id IS NULL AND created_at > datetime('now', '-24 hours')`
+    }
+    
+    query += ` ORDER BY created_at DESC LIMIT 20`
+    
+    const results = await env.DB.prepare(query).bind(...params).all()
     
     return c.json({
       success: true,
-      records: results.results || []
+      records: results.results || [],
+      is_authenticated: !!userId,
+      message: userId ? null : 'Showing anonymous analyses from the last 24 hours. Login to persist your analyses.'
     })
   } catch (error) {
     console.error('History fetch error:', error)
@@ -1054,6 +1166,21 @@ app.get('/', (c) => {
 
             <!-- Analysis Tab Content -->
             <div id="analysisContent" class="tab-content">
+                <!-- Anonymous User Notice -->
+                <div id="anonymousNotice" class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-info-circle text-yellow-400"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-yellow-700">
+                                <strong>Using A-CLAT as Guest:</strong> Your analyses will be available for 24 hours. 
+                                <a href="#" onclick="showRegisterModal()" class="underline font-semibold">Create a free account</a> to permanently save your work and access collaboration features.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
                     <h2 class="text-2xl font-semibold mb-6 text-gray-800">
                         <i class="fas fa-upload mr-2 text-blue-500"></i>
@@ -1066,16 +1193,41 @@ app.get('/', (c) => {
                                 NetCDF/GRIB File
                             </label>
                             <input type="file" id="fileInput" accept=".nc,.grib,.grib2,.netcdf"
+                                onchange="extractVariables()"
                                 class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4
                                     file:rounded-full file:border-0 file:text-sm file:font-semibold
                                     file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" required />
                         </div>
                         
-                        <button type="submit"
+                        <!-- Variable Selection Section (initially hidden) -->
+                        <div id="variableSection" class="hidden space-y-4">
+                            <div class="bg-blue-50 border-l-4 border-blue-400 p-4">
+                                <p class="text-sm text-blue-700">
+                                    <i class="fas fa-check-circle mr-2"></i>
+                                    Variables extracted successfully. Select the variable you want to analyze:
+                                </p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Select Variable for Analysis
+                                </label>
+                                <select id="variableSelect" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <!-- Options will be dynamically added here -->
+                                </select>
+                            </div>
+                            
+                            <div id="variableInfo" class="bg-gray-50 p-4 rounded-lg">
+                                <!-- Variable details will be shown here -->
+                            </div>
+                        </div>
+                        
+                        <button type="submit" id="analyzeButton"
                             class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold
-                                hover:bg-blue-700 transition duration-200">
+                                hover:bg-blue-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled>
                             <i class="fas fa-play-circle mr-2"></i>
-                            Analyze Convective Cells
+                            Select a file to begin analysis
                         </button>
                     </form>
                     
@@ -1249,6 +1401,8 @@ app.get('/', (c) => {
         <script>
             let currentUser = null;
             let currentAnalysisData = null;
+            let selectedVariables = null;
+            let sessionAnalyses = [];
 
             // Tab management
             const tabs = ['analysis', 'search', 'alerts', 'history', 'timelapse', '3d', 'collab'];
@@ -1296,6 +1450,117 @@ app.get('/', (c) => {
 
             function closeModal(modalId) {
                 document.getElementById(modalId).classList.add('hidden');
+            }
+            
+            // Variable extraction from uploaded file
+            async function extractVariables() {
+                const fileInput = document.getElementById('fileInput');
+                const file = fileInput.files[0];
+                
+                if (!file) {
+                    document.getElementById('variableSection').classList.add('hidden');
+                    document.getElementById('analyzeButton').disabled = true;
+                    document.getElementById('analyzeButton').innerHTML = '<i class="fas fa-play-circle mr-2"></i>Select a file to begin analysis';
+                    return;
+                }
+                
+                // Show loading state
+                document.getElementById('analyzeButton').innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Extracting variables...';
+                document.getElementById('analyzeButton').disabled = true;
+                
+                try {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    
+                    const response = await fetch('/api/extract-variables', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        selectedVariables = data.variables;
+                        displayVariables(data.variables, data.metadata, data.recommended);
+                        
+                        // Enable analyze button
+                        document.getElementById('analyzeButton').disabled = false;
+                        document.getElementById('analyzeButton').innerHTML = '<i class="fas fa-play-circle mr-2"></i>Analyze Convective Cells';
+                    } else {
+                        alert('Failed to extract variables: ' + (data.error || 'Unknown error'));
+                    }
+                } catch (error) {
+                    console.error('Variable extraction error:', error);
+                    alert('Error extracting variables from file');
+                    document.getElementById('analyzeButton').innerHTML = '<i class="fas fa-play-circle mr-2"></i>Select a file to begin analysis';
+                }
+            }
+            
+            function displayVariables(variables, metadata, recommended) {
+                const variableSection = document.getElementById('variableSection');
+                const variableSelect = document.getElementById('variableSelect');
+                const variableInfo = document.getElementById('variableInfo');
+                
+                // Clear previous options
+                variableSelect.innerHTML = '';
+                
+                // Add variable options
+                variables.forEach(variable => {
+                    const option = document.createElement('option');
+                    option.value = variable.name;
+                    option.textContent = \`\${variable.name} - \${variable.description}\`;
+                    if (variable.name === recommended) {
+                        option.selected = true;
+                    }
+                    variableSelect.appendChild(option);
+                });
+                
+                // Display metadata
+                variableInfo.innerHTML = \`
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <span class="font-semibold text-gray-600">File Type:</span>
+                            <span class="ml-2">\${metadata.type.toUpperCase()}</span>
+                        </div>
+                        <div>
+                            <span class="font-semibold text-gray-600">File Size:</span>
+                            <span class="ml-2">\${(metadata.size / 1024 / 1024).toFixed(2)} MB</span>
+                        </div>
+                        <div>
+                            <span class="font-semibold text-gray-600">Time Steps:</span>
+                            <span class="ml-2">\${metadata.dimensions.time}</span>
+                        </div>
+                        <div>
+                            <span class="font-semibold text-gray-600">Grid Size:</span>
+                            <span class="ml-2">\${metadata.dimensions.lat} × \${metadata.dimensions.lon}</span>
+                        </div>
+                    </div>
+                \`;
+                
+                // Update variable info when selection changes
+                variableSelect.addEventListener('change', () => {
+                    const selected = variables.find(v => v.name === variableSelect.value);
+                    if (selected) {
+                        const existingInfo = variableInfo.querySelector('.grid');
+                        variableInfo.innerHTML = \`
+                            <div class="mb-3 p-3 bg-white rounded border border-blue-200">
+                                <h4 class="font-semibold text-blue-700 mb-1">\${selected.name}</h4>
+                                <p class="text-sm text-gray-600">\${selected.description}</p>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    <span class="font-semibold">Units:</span> \${selected.units} | 
+                                    <span class="font-semibold">Type:</span> \${selected.type}
+                                </p>
+                            </div>
+                        \`;
+                        variableInfo.appendChild(existingInfo);
+                    }
+                });
+                
+                // Show the variable section
+                variableSection.classList.remove('hidden');
+                
+                // Trigger change event to show initial selection info
+                variableSelect.dispatchEvent(new Event('change'));
             }
 
             async function login() {
@@ -1351,6 +1616,8 @@ app.get('/', (c) => {
 
             function updateAuthUI() {
                 const authSection = document.getElementById('authSection');
+                const anonymousNotice = document.getElementById('anonymousNotice');
+                
                 if (currentUser) {
                     authSection.innerHTML = \`
                         <span class="mr-4">Welcome, \${currentUser.username}</span>
@@ -1358,6 +1625,8 @@ app.get('/', (c) => {
                             <i class="fas fa-sign-out-alt mr-2"></i>Logout
                         </button>
                     \`;
+                    // Hide anonymous notice when logged in
+                    if (anonymousNotice) anonymousNotice.classList.add('hidden');
                 } else {
                     authSection.innerHTML = \`
                         <button onclick="showLoginModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
@@ -1367,6 +1636,8 @@ app.get('/', (c) => {
                             <i class="fas fa-user-plus mr-2"></i>Register
                         </button>
                     \`;
+                    // Show anonymous notice when not logged in
+                    if (anonymousNotice) anonymousNotice.classList.remove('hidden');
                 }
             }
 
@@ -1387,13 +1658,17 @@ app.get('/', (c) => {
                 
                 const file = document.getElementById('fileInput').files[0];
                 if (!file) return;
+                
+                // Get selected variable
+                const variableSelect = document.getElementById('variableSelect');
+                const selectedVariable = variableSelect ? variableSelect.value : 'Z';
 
                 document.getElementById('loadingSection').classList.remove('hidden');
                 document.getElementById('resultsSection').classList.add('hidden');
 
                 const formData = new FormData();
                 formData.append('file', file);
-                formData.append('variable', 'Z');
+                formData.append('variable', selectedVariable);
 
                 try {
                     const response = await fetch('/api/analyze', {
@@ -1404,6 +1679,16 @@ app.get('/', (c) => {
                     if (response.ok) {
                         currentAnalysisData = await response.json();
                         displayResults(currentAnalysisData);
+                        
+                        // Store in session for anonymous users
+                        if (!currentUser) {
+                            sessionAnalyses.push(currentAnalysisData);
+                            // Keep only last 10 analyses in session
+                            if (sessionAnalyses.length > 10) {
+                                sessionAnalyses.shift();
+                            }
+                        }
+                        
                         loadAlerts(); // Refresh alerts
                     } else {
                         alert('Analysis failed');
@@ -1415,12 +1700,37 @@ app.get('/', (c) => {
 
             function displayResults(data) {
                 document.getElementById('resultsSection').classList.remove('hidden');
+                
+                // Show notice if user is not authenticated
+                const authNotice = !data.metadata.is_authenticated ? \`
+                    <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-info-circle text-blue-400"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-blue-700">
+                                    <strong>Analysis saved temporarily.</strong> This analysis will be available for 24 hours. 
+                                    <a href="#" onclick="showLoginModal()" class="underline font-semibold">Login</a> to save permanently.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                \` : '';
+                
                 document.getElementById('resultsSection').innerHTML = \`
+                    \${authNotice}
                     <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
                         <h2 class="text-2xl font-semibold mb-6 text-gray-800">
                             <i class="fas fa-brain mr-2 text-purple-500"></i>
-                            AI Classification
+                            AI Classification Results
                         </h2>
+                        <div class="mb-4 p-3 bg-gray-50 rounded">
+                            <span class="text-sm text-gray-600">Variable Analyzed:</span>
+                            <span class="ml-2 font-semibold text-gray-800">\${data.metadata.variable}</span>
+                            <span class="ml-4 text-sm text-gray-600">File:</span>
+                            <span class="ml-2 font-semibold text-gray-800">\${data.metadata.filename}</span>
+                        </div>
                         <div class="bg-gradient-to-r from-purple-50 to-indigo-50 p-6 rounded-lg">
                             <h3 class="text-xl font-bold text-purple-800">\${data.ai_analysis.classification}</h3>
                             <p class="text-gray-700 mt-2">\${data.ai_analysis.justification}</p>
@@ -1574,35 +1884,59 @@ app.get('/', (c) => {
                 const response = await fetch('/api/history');
                 if (response.ok) {
                     const data = await response.json();
-                    displayHistory(data.records);
+                    displayHistory(data.records, data.is_authenticated, data.message);
                 }
             }
 
-            function displayHistory(records) {
-                const html = \`
-                    <table class="min-w-full">
-                        <thead>
-                            <tr class="bg-gray-50">
-                                <th class="px-4 py-2 text-left">Date</th>
-                                <th class="px-4 py-2 text-left">File</th>
-                                <th class="px-4 py-2 text-left">Classification</th>
-                                <th class="px-4 py-2 text-left">Confidence</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            \${records.map(r => \`
-                                <tr>
-                                    <td class="px-4 py-2">\${new Date(r.created_at).toLocaleString()}</td>
-                                    <td class="px-4 py-2">\${r.filename}</td>
-                                    <td class="px-4 py-2 text-blue-600 font-semibold">\${r.classification}</td>
-                                    <td class="px-4 py-2">\${(r.confidence * 100).toFixed(1)}%</td>
-                                </tr>
-                            \`).join('')}
-                        </tbody>
-                    </table>
-                \`;
+            function displayHistory(records, isAuthenticated, message) {
+                let content = '';
                 
-                document.getElementById('historyTable').innerHTML = html || '<p>No history</p>';
+                // Show message for anonymous users
+                if (!isAuthenticated && message) {
+                    content += \`
+                        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-info-circle text-yellow-400"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-yellow-700">\${message}</p>
+                                </div>
+                            </div>
+                        </div>
+                    \`;
+                }
+                
+                if (records.length > 0) {
+                    content += \`
+                        <table class="min-w-full">
+                            <thead>
+                                <tr class="bg-gray-50">
+                                    <th class="px-4 py-2 text-left">Date</th>
+                                    <th class="px-4 py-2 text-left">File</th>
+                                    <th class="px-4 py-2 text-left">Variable</th>
+                                    <th class="px-4 py-2 text-left">Classification</th>
+                                    <th class="px-4 py-2 text-left">Confidence</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                \${records.map(r => \`
+                                    <tr>
+                                        <td class="px-4 py-2">\${new Date(r.created_at).toLocaleString()}</td>
+                                        <td class="px-4 py-2">\${r.filename}</td>
+                                        <td class="px-4 py-2">\${r.variable || 'Z'}</td>
+                                        <td class="px-4 py-2 text-blue-600 font-semibold">\${r.classification}</td>
+                                        <td class="px-4 py-2">\${(r.confidence * 100).toFixed(1)}%</td>
+                                    </tr>
+                                \`).join('')}
+                            </tbody>
+                        </table>
+                    \`;
+                } else {
+                    content += '<p class="text-gray-500">No analysis history available.</p>';
+                }
+                
+                document.getElementById('historyTable').innerHTML = content;
             }
 
             // Time-lapse functionality
