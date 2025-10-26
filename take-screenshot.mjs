@@ -1,39 +1,98 @@
-import { chromium } from 'playwright';
+import puppeteer from 'puppeteer';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const browser = await chromium.launch({
-  headless: true,
-  args: ['--no-sandbox', '--disable-setuid-sandbox']
-});
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const page = await browser.newPage();
+async function takeScreenshots() {
+  console.log('Launching browser...');
+  const browser = await puppeteer.launch({
+    headless: 'new',
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  });
 
-// Set viewport for a good desktop screenshot
-await page.setViewportSize({ width: 1920, height: 1080 });
+  const page = await browser.newPage();
+  await page.setViewport({ width: 1920, height: 1080 });
 
-// Navigate to the application
-console.log('Navigating to application...');
-await page.goto('https://3000-iiqzr0hiif3i299iwltsl-b32ec7bb.sandbox.novita.ai', {
-  waitUntil: 'networkidle'
-});
+  try {
+    // Main application page
+    console.log('Taking main application screenshot...');
+    await page.goto('http://localhost:3000', { waitUntil: 'networkidle2', timeout: 30000 });
+    await new Promise(r => setTimeout(r, 2000));
+    await page.screenshot({ 
+      path: path.join(__dirname, 'docs/images/main-app.png'),
+      fullPage: false 
+    });
+    console.log('✅ Main app screenshot saved');
 
-// Wait for the main content to load
-await page.waitForSelector('#uploadForm', { timeout: 10000 });
+    // Try to click on tabs and take more screenshots
+    // Search tab
+    const searchTab = await page.$('#tabSearch');
+    if (searchTab) {
+      await searchTab.click();
+      await new Promise(r => setTimeout(r, 1000));
+      await page.screenshot({ 
+        path: path.join(__dirname, 'docs/images/search-tab.png'),
+        fullPage: false 
+      });
+      console.log('✅ Search tab screenshot saved');
+    }
 
-// Take a screenshot
-await page.screenshot({
-  path: 'screenshot.png',
-  fullPage: false
-});
+    // Alerts tab
+    const alertsTab = await page.$('#tabAlerts');
+    if (alertsTab) {
+      await alertsTab.click();
+      await new Promise(r => setTimeout(r, 1000));
+      await page.screenshot({ 
+        path: path.join(__dirname, 'docs/images/alerts-tab.png'),
+        fullPage: false 
+      });
+      console.log('✅ Alerts tab screenshot saved');
+    }
 
-console.log('Screenshot saved as screenshot.png');
+    // 3D View tab
+    const tab3D = await page.$('#tab3D');
+    if (tab3D) {
+      await tab3D.click();
+      await new Promise(r => setTimeout(r, 1000));
+      await page.screenshot({ 
+        path: path.join(__dirname, 'docs/images/3d-view-tab.png'),
+        fullPage: false 
+      });
+      console.log('✅ 3D View tab screenshot saved');
+    }
 
-// Take a full page screenshot
-await page.screenshot({
-  path: 'screenshot-full.png',
-  fullPage: true
-});
+    // Collaboration tab
+    const collabTab = await page.$('#tabCollab');
+    if (collabTab) {
+      await collabTab.click();
+      await new Promise(r => setTimeout(r, 1000));
+      await page.screenshot({ 
+        path: path.join(__dirname, 'docs/images/collaboration-tab.png'),
+        fullPage: false 
+      });
+      console.log('✅ Collaboration tab screenshot saved');
+    }
 
-console.log('Full page screenshot saved as screenshot-full.png');
+    // Take a full page screenshot
+    const analysisTab = await page.$('#tabAnalysis');
+    if (analysisTab) {
+      await analysisTab.click();
+      await new Promise(r => setTimeout(r, 1000));
+    }
+    await page.screenshot({ 
+      path: path.join(__dirname, 'docs/images/screenshot.png'),
+      fullPage: true 
+    });
+    console.log('✅ Full page screenshot saved');
 
-await browser.close();
-process.exit(0);
+  } catch (error) {
+    console.error('Error taking screenshot:', error);
+  } finally {
+    await browser.close();
+    console.log('Browser closed');
+  }
+}
+
+takeScreenshots().catch(console.error);
