@@ -2,19 +2,34 @@
 ### Developed by clevernat
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)](https://github.com/clevernat/a-clat)
+[![Version](https://img.shields.io/badge/version-2.3.0-blue.svg)](https://github.com/clevernat/a-clat)
 [![Platform](https://img.shields.io/badge/platform-Cloudflare%20Pages-orange.svg)](https://pages.cloudflare.com/)
 [![Status](https://img.shields.io/badge/status-production%20ready-green.svg)](https://github.com/clevernat/a-clat)
 
-## 🆕 Latest Updates (v2.2.0) - Enhanced UI & Temporal Analysis
+## 🆕 Latest Updates (v2.3.0) - Interactive Plots & Animations
 
 ### ✨ Major New Features
-1. **🕰️ Temporal Coverage Display**: Shows data start/end times and temporal resolution instead of just time steps
-2. **🖥️ Side-by-Side Analysis Layout**: Upload form and results now appear side-by-side for better workflow
-3. **🎯 Smart Result Navigation**: Automatic visual guidance to analysis results with highlighting
-4. **🔍 Automatic Variable Extraction**: Upload any NetCDF/GRIB file and A-CLAT automatically detects all available variables
-5. **👤 Guest Mode Support**: Use A-CLAT without creating an account - analyses saved for 24 hours
-6. **📊 Enhanced Variable Info**: Shows temporal resolution, coverage period, and spatial dimensions
+1. **📊 Interactive Data Plots**: 
+   - Time series plots with dual Y-axes
+   - Spatial distribution heatmaps
+   - Value distribution histograms
+   - Full Plotly.js integration
+2. **🎬 Time-Lapse Animations**: 
+   - Animated heatmaps showing data evolution
+   - Play/pause/reset controls
+   - Frame-by-frame slider navigation
+   - Configurable animation speed
+3. **📅 Time Range Selection**: 
+   - Select specific time periods for analysis
+   - Dropdown selectors with full date/time display
+   - Year included in all temporal displays
+4. **🕰️ Enhanced Temporal Display**: 
+   - Full date format: "Oct 26, 2025, 08:00 AM"
+   - Clear resolution display (e.g., "4 hours")
+   - Start/end time with complete year information
+5. **🖥️ Side-by-Side Analysis Layout**: Upload form and results appear side-by-side
+6. **🔍 Automatic Variable Extraction**: Detects all available variables from files
+7. **👤 Guest Mode Support**: Use without registration (24-hour data retention)
 
 ## 📸 Application Screenshots
 
@@ -74,7 +89,7 @@
 
 ### Key Information
 - **Developer**: clevernat
-- **Version**: 2.2.0 (Enhanced UI & Temporal Analysis)
+- **Version**: 2.3.0 (Interactive Plots & Animations)
 - **Platform**: Cloudflare Pages (Edge-optimized)
 - **Tech Stack**: Hono + TypeScript + Tailwind CSS + Plotly.js
 - **AI Technology**: clevernat proprietary atmospheric analysis engine
@@ -102,11 +117,17 @@
 - 📜 **History Tracking**: Session-based (guest) or permanent (registered) analysis history
 - 🌐 **Edge Deployment**: Global distribution via Cloudflare's network
 
-### Version 2.2 Enhanced Features
-- **Temporal Analysis Display**: 
-  - Shows data coverage period (start and end times)
-  - Displays temporal resolution (e.g., "1 hour", "30 minutes")
-  - Total time steps and duration information
+### Version 2.3 Enhanced Features
+- **Interactive Plotting System**:
+  - Multiple plot types accessible via button controls
+  - Responsive plots that adapt to screen size
+  - Color-coded data visualization
+  - Hover tooltips with detailed information
+- **Advanced Temporal Analysis**: 
+  - Complete date/time display with year (e.g., "Oct 26, 2025, 08:00 AM")
+  - Time range selection for focused analysis
+  - Temporal resolution display (e.g., "4 hours between steps")
+  - Total duration and step count
 - **Improved User Interface**:
   - Side-by-side layout for upload and results
   - Automatic scroll and highlight for new results
@@ -120,7 +141,12 @@
   - File metadata (size, type)
 - **Flexible Data Persistence**: Choose between temporary (guest) or permanent (registered) storage
 - **D1 Database Integration**: Persistent storage for registered users
-- **3D Visualization**: Interactive 3D storm structure evolution
+- **Visualization Suite**:
+  - Time series plots with multiple variables
+  - Spatial heatmaps for geographic distribution
+  - Histogram charts for statistical analysis
+  - Animated visualizations for temporal evolution
+  - 3D storm structure visualization
 - **Export Functionality**: One-click data export in CSV, JSON, and GeoJSON formats
 - **Tabbed Interface**: Organized UI with Analysis, Search, Alerts, History, Time-lapse, 3D, and Collaboration views
 
