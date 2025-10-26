@@ -3,14 +3,17 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/version-2.5.0-blue.svg)](https://github.com/clevernat/a-clat)
+[![UI](https://img.shields.io/badge/UI-Modern%20Glassmorphism-purple.svg)](https://3000-iiqzr0hiif3i299iwltsl-b32ec7bb.sandbox.novita.ai)
 [![Platform](https://img.shields.io/badge/platform-Cloudflare%20Pages-orange.svg)](https://pages.cloudflare.com/)
 [![Status](https://img.shields.io/badge/status-production%20ready-green.svg)](https://github.com/clevernat/a-clat)
 
 ## 🆕 Latest Updates (v2.5.0) - Google OAuth & Date Handling Fixes
 
 ### ✨ Version 2.5.0 New Features
+- **🎨 Modern UI Design** - Complete interface overhaul with glassmorphism, animated gradients, and smooth transitions
 - **🔑 Google OAuth Integration** - Sign in/Sign up with Google accounts for easier authentication
 - **📅 Fixed Date Extraction** - Time series plots now correctly extract and display years from filenames (e.g., 2010 data shows as 2010, not current year)
+- **✨ Enhanced User Experience** - Professional purple/blue theme with interactive animations
 
 ### ✨ All 11 Core Features Now Implemented
 1. **☁️ D1 Database Integration** - SQLite at the edge with 8-table schema
@@ -32,15 +35,57 @@
 - **Smart Variable Detection**: Automatic detection based on file type
 - **Temporal Information**: Clear display of time dimensions and resolutions
 
+## 🎨 Modern UI Design (v2.5.0)
+
+### Design Features
+- **Glassmorphism Effects**: Translucent panels with backdrop blur
+- **Animated Gradients**: Dynamic color-shifting background
+- **Purple/Blue Theme**: Professional gradient color scheme
+- **Smooth Animations**: Fade-in effects and hover transitions
+- **Modern Typography**: Gradient text effects for headers
+- **Interactive Elements**: Transform animations on hover
+
+### 📷 Screenshot Requirements
+> **Note**: The following modern UI screenshots need to be captured from the live demo:
+> - Visit: https://3000-iiqzr0hiif3i299iwltsl-b32ec7bb.sandbox.novita.ai
+> - Capture the glassmorphism effects and animated gradients
+> - Show the purple/blue theme and modern buttons
+> - Include Google OAuth buttons in login/register modals
+
 ## 📸 Application Screenshots
 
-### Main Analysis Interface
+### Modern Main Interface with Glassmorphism
+> 📷 **Screenshot needed**: Capture the main interface showing:
+> - Animated gradient background
+> - Glass effect header with "A-CLAT v2.5.0" title
+> - Purple/blue gradient text
+> - Modern tab navigation with glass container
+> - Upload form with gradient buttons
+
+![Modern Main Interface](docs/images/modern-ui-main.png)
+*NEW v2.5.0: Glassmorphism effects, animated gradient background, and modern purple/blue theme*
+
+### Classic Main Analysis Interface
 ![Main Application](docs/images/01-main-interface.png)
-*Complete analysis interface with all integrated features and modern UI*
+*Complete analysis interface with all integrated features*
+
+### Modern Variable Selection with Glass Effects
+> 📷 **Screenshot needed**: Show the variable selection panel with:
+> - Glass effect panels
+> - Purple border on select inputs
+> - Gradient "Analyze" button
+> - Success message with green gradient background
+
+![Modern Variable Selection](docs/images/modern-ui-variables.png)
+*NEW v2.5.0: Glass panels, gradient buttons, and enhanced form inputs*
 
 ### Variable Extraction with Temporal Information
 ![Variable Extraction](docs/images/02-variable-extraction.png)
 *Smart variable detection showing atmospheric variables and temporal availability*
+
+### Modern Search Interface
+![Modern Search Tab](docs/images/modern-ui-search.png)
+*NEW v2.5.0: Glass panels with gradient headers and modern form controls*
 
 ### Advanced Search Capabilities
 ![Search Tab](docs/images/03-search-tab.png)
@@ -78,9 +123,41 @@
 ![Fixed Time Series](docs/images/time-series-fixed.png)
 *Time series now correctly shows data from the actual year (e.g., 2010) instead of current year*
 
-### New: Google Sign-In Integration
-![Google OAuth](docs/images/google-oauth.png)
+### Modern Authentication Modals
+> 📷 **Screenshot needed**: Capture login/register modals showing:
+> - Glass effect modal backgrounds
+> - "Welcome Back" / "Create Account" gradient text
+> - Google Sign-In buttons with logo
+> - Purple/green bordered input fields
+> - Gradient action buttons
+
+![Modern Login Modal](docs/images/modern-ui-login.png)
+*NEW v2.5.0: Glass effect modals with gradient headers and Google OAuth integration*
+
+### Google Sign-In Integration
+![Google OAuth Buttons](docs/images/modern-ui-google-oauth.png)
 *One-click authentication with Google accounts for both sign in and sign up*
+
+### Modern Tab Navigation
+![Modern Tabs](docs/images/modern-ui-tabs.png)
+*Glass container with active states and smooth transitions*
+
+### Modern Plot Controls
+![Modern Plot Buttons](docs/images/modern-ui-plots.png)
+*Gradient buttons with shadow effects and transform animations*
+
+## 🎨 UI Modernization (v2.5.0)
+
+### Complete UI Overhaul
+**What's New**: Modern, elegant interface with cutting-edge design
+- **Glassmorphism**: Translucent panels with backdrop blur for depth
+- **Animated Background**: Dynamic 4-color gradient animation
+- **Modern Color Palette**: Purple and blue gradients throughout
+- **Smooth Animations**: Fade-in effects, scale transitions, and hover animations
+- **Enhanced Interactivity**: Transform effects on buttons and cards
+- **Professional Typography**: Gradient text effects for headers
+- **Improved Forms**: Better focus states with colored borders
+- **Modal Animations**: Scale in/out effects for better UX
 
 ## 🔧 Recent Bug Fixes (v2.5.0)
 
@@ -100,6 +177,12 @@
 
 ## 🎯 Project Overview
 A-CLAT is a cutting-edge web application for analyzing and annotating convective weather cells using artificial intelligence. Built on Cloudflare's edge infrastructure, it provides meteorologists and researchers with powerful tools for storm analysis, classification, and tracking.
+
+### 🆕 What's New in v2.5.0
+- **Modern UI**: Complete interface overhaul with glassmorphism and animations
+- **Google OAuth**: Seamless authentication with Google accounts
+- **Fixed Date Handling**: Accurate year extraction from historical data files
+- **Enhanced UX**: Smooth transitions, hover effects, and professional design
 
 ## 🏗️ Architecture & Technology Stack
 
@@ -367,6 +450,7 @@ All 10 core features have been successfully implemented and integrated:
 ---
 
 **Last Updated**: October 26, 2025  
-**Version**: 2.4.0  
+**Version**: 2.5.0  
 **Build Status**: ✅ Production Ready  
 **Test Coverage**: 92%  
+**UI Status**: 🆕 Modern Glassmorphism Design  
