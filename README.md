@@ -6,6 +6,8 @@
 [![Platform](https://img.shields.io/badge/platform-Cloudflare%20Pages-orange.svg)](https://pages.cloudflare.com/)
 [![Status](https://img.shields.io/badge/status-production%20ready-green.svg)](https://github.com/clevernat/a-clat)
 
+![A-CLAT Screenshot](docs/images/screenshot.png)
+
 ## 🌩️ Project Overview
 
 **A-CLAT** is a cutting-edge web application for analyzing atmospheric data and tracking convective cells using advanced AI classification. Built by **clevernat**, this application provides meteorologists, researchers, and weather enthusiasts with powerful tools to analyze and understand storm systems.

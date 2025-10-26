@@ -9,7 +9,13 @@
     "type": "git",
     "url": "https://github.com/clevernat/a-clat.git"
   },
-  "keywords": ["weather", "atmospheric-science", "storm-tracking", "ai", "cloudflare"],
+  "keywords": [
+    "weather",
+    "atmospheric-science",
+    "storm-tracking",
+    "ai",
+    "cloudflare"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -22,7 +28,8 @@
   },
   "dependencies": {
     "formdata-node": "^6.0.3",
-    "hono": "^4.10.3"
+    "hono": "^4.10.3",
+    "playwright": "^1.56.1"
   },
   "devDependencies": {
     "@hono/vite-build": "^1.2.0",
