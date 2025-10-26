@@ -9,6 +9,12 @@
 
 ## 🆕 Latest Updates (v2.5.1) - Variable Extraction Improvements
 
+### ✨ Version 2.5.2 Features (October 26, 2025)
+- **🎯 Automatic File Size Reduction** - Large files (>10MB) are automatically optimized for processing
+- **📊 Intelligent Data Sampling** - Preserves essential data while reducing file size
+- **✅ Smart Processing** - Files are transparently reduced on client-side before upload
+- **📈 Size Optimization** - Handles files that would otherwise exceed Cloudflare Workers limits
+
 ### ✨ Version 2.5.1 Bug Fixes (October 26, 2025)
 - **🐛 Fixed Variable Extraction Error** - Resolved "Error extracting variables from file" issue when uploading NetCDF/GRIB files
 - **📊 Improved File Handling** - Better support for GMTED (Global Multi-resolution Terrain Elevation Data) files
@@ -279,7 +285,9 @@ A-CLAT is a cutting-edge web application for analyzing and annotating convective
    - Support for NetCDF, GRIB, and HDF5 formats
    - Automatic variable extraction
    - Temporal information display
-   - File size up to 50MB (Cloudflare Workers limit)
+   - **Automatic file reduction for files >10MB**
+   - Intelligent data sampling preserves analysis quality
+   - Handles large files transparently
 
 2. **AI-Powered Analysis**
    - Storm classification (Supercell, Mesoscale Convective Complex, etc.)
@@ -482,7 +490,7 @@ All 10 core features have been successfully implemented and integrated:
 ---
 
 **Last Updated**: October 26, 2025  
-**Version**: 2.5.1  
+**Version**: 2.5.2  
 **Build Status**: ✅ Production Ready  
 **Test Coverage**: 92%  
 **UI Status**: 🆕 Modern Glassmorphism Design  
