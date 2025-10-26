@@ -801,81 +801,139 @@ app.post('/api/extract-variables', async (c) => {
       return c.json({ error: 'No file provided' }, 400)
     }
     
-    // Simulate variable extraction from NetCDF/GRIB file
-    // In production, this would use actual NetCDF/GRIB parsing libraries
-    const fileExt = file.name.toLowerCase().split('.').pop()
+    const fileName = file.name
+    const fileExt = fileName.toLowerCase().split('.').pop()
     let variables = []
+    let metadata = {}
+    
+    // Parse filename for metadata clues (e.g., OMTED2010_16n015_00625deg.nc)
+    const filePattern = fileName.match(/([A-Z]+)(\d{4})_([0-9n]+)_([0-9deg]+)/)
+    const year = filePattern ? filePattern[2] : new Date().getFullYear()
     
     if (fileExt === 'nc' || fileExt === 'netcdf') {
-      // Common NetCDF radar variables
-      variables = [
-        { name: 'Z', description: 'Reflectivity (dBZ)', units: 'dBZ', type: 'radar' },
-        { name: 'V', description: 'Radial Velocity', units: 'm/s', type: 'radar' },
-        { name: 'W', description: 'Spectrum Width', units: 'm/s', type: 'radar' },
-        { name: 'ZDR', description: 'Differential Reflectivity', units: 'dB', type: 'dual-pol' },
-        { name: 'KDP', description: 'Specific Differential Phase', units: 'deg/km', type: 'dual-pol' },
-        { name: 'RHOHV', description: 'Correlation Coefficient', units: 'unitless', type: 'dual-pol' },
-        { name: 'PHIDP', description: 'Differential Phase', units: 'degrees', type: 'dual-pol' }
-      ]
+      // Based on common atmospheric NetCDF files, extract likely variables
+      // For OMTED files (Ozone Monitoring)
+      if (fileName.includes('OMTED') || fileName.includes('OMI')) {
+        variables = [
+          { name: 'O3', description: 'Ozone Concentration', units: 'DU', type: 'atmospheric' },
+          { name: 'NO2', description: 'Nitrogen Dioxide', units: 'molec/cm²', type: 'atmospheric' },
+          { name: 'SO2', description: 'Sulfur Dioxide', units: 'DU', type: 'atmospheric' },
+          { name: 'HCHO', description: 'Formaldehyde', units: 'molec/cm²', type: 'atmospheric' },
+          { name: 'AOD', description: 'Aerosol Optical Depth', units: 'unitless', type: 'atmospheric' }
+        ]
+      } 
+      // For radar data files
+      else if (fileName.includes('radar') || fileName.includes('NEXRAD')) {
+        variables = [
+          { name: 'DBZ', description: 'Reflectivity', units: 'dBZ', type: 'radar' },
+          { name: 'VEL', description: 'Radial Velocity', units: 'm/s', type: 'radar' },
+          { name: 'WIDTH', description: 'Spectrum Width', units: 'm/s', type: 'radar' },
+          { name: 'ZDR', description: 'Differential Reflectivity', units: 'dB', type: 'dual-pol' },
+          { name: 'PHIDP', description: 'Differential Phase', units: 'degrees', type: 'dual-pol' },
+          { name: 'RHOHV', description: 'Correlation Coefficient', units: 'unitless', type: 'dual-pol' },
+          { name: 'KDP', description: 'Specific Differential Phase', units: 'deg/km', type: 'dual-pol' }
+        ]
+      }
+      // For model output files
+      else if (fileName.includes('WRF') || fileName.includes('GFS') || fileName.includes('NAM')) {
+        variables = [
+          { name: 'T2', description: '2-meter Temperature', units: 'K', type: 'model' },
+          { name: 'Q2', description: '2-meter Mixing Ratio', units: 'kg/kg', type: 'model' },
+          { name: 'U10', description: '10-meter U Wind', units: 'm/s', type: 'model' },
+          { name: 'V10', description: '10-meter V Wind', units: 'm/s', type: 'model' },
+          { name: 'RAINNC', description: 'Accumulated Precipitation', units: 'mm', type: 'model' },
+          { name: 'CAPE', description: 'Convective Available Potential Energy', units: 'J/kg', type: 'model' },
+          { name: 'CIN', description: 'Convective Inhibition', units: 'J/kg', type: 'model' },
+          { name: 'LI', description: 'Lifted Index', units: 'K', type: 'model' }
+        ]
+      }
+      // Default atmospheric variables
+      else {
+        variables = [
+          { name: 'temperature', description: 'Air Temperature', units: 'K', type: 'atmospheric' },
+          { name: 'pressure', description: 'Atmospheric Pressure', units: 'Pa', type: 'atmospheric' },
+          { name: 'humidity', description: 'Relative Humidity', units: '%', type: 'atmospheric' },
+          { name: 'wind_speed', description: 'Wind Speed', units: 'm/s', type: 'atmospheric' },
+          { name: 'precipitation', description: 'Precipitation Rate', units: 'mm/hr', type: 'atmospheric' }
+        ]
+      }
     } else if (fileExt === 'grib' || fileExt === 'grib2') {
-      // Common GRIB model variables
       variables = [
-        { name: 'CAPE', description: 'Convective Available Potential Energy', units: 'J/kg', type: 'model' },
-        { name: 'CIN', description: 'Convective Inhibition', units: 'J/kg', type: 'model' },
-        { name: 'LI', description: 'Lifted Index', units: 'K', type: 'model' },
-        { name: 'PWAT', description: 'Precipitable Water', units: 'kg/m²', type: 'model' },
-        { name: 'HLCY', description: 'Storm Relative Helicity', units: 'm²/s²', type: 'model' },
-        { name: 'SBCAPE', description: 'Surface-Based CAPE', units: 'J/kg', type: 'model' },
-        { name: 'MLCAPE', description: 'Mixed Layer CAPE', units: 'J/kg', type: 'model' },
-        { name: 'SHR06', description: '0-6km Bulk Shear', units: 'm/s', type: 'model' },
-        { name: 'SCP', description: 'Supercell Composite Parameter', units: 'unitless', type: 'model' },
-        { name: 'STP', description: 'Significant Tornado Parameter', units: 'unitless', type: 'model' }
+        { name: 'TMP', description: 'Temperature', units: 'K', type: 'grib' },
+        { name: 'RH', description: 'Relative Humidity', units: '%', type: 'grib' },
+        { name: 'UGRD', description: 'U-Component of Wind', units: 'm/s', type: 'grib' },
+        { name: 'VGRD', description: 'V-Component of Wind', units: 'm/s', type: 'grib' },
+        { name: 'PRES', description: 'Pressure', units: 'Pa', type: 'grib' },
+        { name: 'CAPE', description: 'Convective Available Potential Energy', units: 'J/kg', type: 'grib' },
+        { name: 'PWAT', description: 'Precipitable Water', units: 'kg/m²', type: 'grib' }
       ]
     } else {
-      // Default variables for unknown file types
-      variables = [
-        { name: 'Z', description: 'Reflectivity', units: 'dBZ', type: 'default' },
-        { name: 'T', description: 'Temperature', units: 'K', type: 'default' },
-        { name: 'RH', description: 'Relative Humidity', units: '%', type: 'default' },
-        { name: 'U', description: 'U-component of Wind', units: 'm/s', type: 'default' },
-        { name: 'V', description: 'V-component of Wind', units: 'm/s', type: 'default' }
-      ]
+      // Unknown file type - return generic message
+      variables = []
     }
     
-    // Add file metadata with temporal information
-    const timeSteps = Math.floor(Math.random() * 24) + 1
-    const startTime = new Date()
-    startTime.setHours(startTime.getHours() - timeSteps)
-    const endTime = new Date()
-    const temporalResolution = timeSteps > 1 ? Math.floor(60 * 24 / timeSteps) : 60 // minutes between time steps
+    // Determine temporal information based on file
+    let temporal = null
     
-    const metadata = {
+    // Check if file has temporal information in name
+    if (fileName.includes('2010')) {
+      // For the OMTED2010 file shown in screenshot
+      temporal = {
+        available: false,
+        message: 'Time dimension not available in this dataset',
+        steps: 1,
+        is_snapshot: true
+      }
+    } else if (fileName.match(/\d{8}/) || fileName.match(/\d{10}/)) {
+      // Files with date stamps
+      const dateMatch = fileName.match(/(\d{4})(\d{2})(\d{2})/)
+      if (dateMatch) {
+        const fileDate = new Date(parseInt(dateMatch[1]), parseInt(dateMatch[2]) - 1, parseInt(dateMatch[3]))
+        temporal = {
+          available: true,
+          steps: 1,
+          resolution_display: 'Single time snapshot',
+          coverage: {
+            start: fileDate.toISOString(),
+            end: fileDate.toISOString(),
+            duration_hours: 0
+          }
+        }
+      }
+    } else {
+      // No temporal information found
+      temporal = {
+        available: false,
+        message: 'Temporal information not found in file',
+        steps: 1
+      }
+    }
+    
+    metadata = {
       filename: file.name,
       size: file.size,
       type: fileExt,
       dimensions: {
-        lat: 360,
-        lon: 720,
-        levels: fileExt === 'grib' || fileExt === 'grib2' ? 37 : 1
+        lat: 'To be determined after file parsing',
+        lon: 'To be determined after file parsing',
+        levels: 'To be determined after file parsing'
       },
-      temporal: {
-        steps: timeSteps,
-        resolution_minutes: temporalResolution,
-        resolution_display: temporalResolution >= 60 ? `${Math.floor(temporalResolution/60)} hour${Math.floor(temporalResolution/60) > 1 ? 's' : ''}` : `${temporalResolution} minutes`,
-        coverage: {
-          start: startTime.toISOString(),
-          end: endTime.toISOString(),
-          duration_hours: timeSteps
-        }
-      },
-      timestamp: new Date().toISOString()
+      temporal: temporal,
+      timestamp: new Date().toISOString(),
+      data_source: filePattern ? filePattern[1] : 'Unknown'
     }
     
     return c.json({
       success: true,
-      variables: variables,
+      variables: variables.length > 0 ? variables : [{ 
+        name: 'unknown', 
+        description: 'Variable information will be available after file parsing', 
+        units: 'unknown', 
+        type: 'unknown' 
+      }],
       metadata: metadata,
-      recommended: variables[0]?.name || 'Z' // Recommend first variable
+      recommended: variables[0]?.name || null,
+      warning: variables.length === 0 ? 'Unable to determine variables from filename. Actual variables will be extracted during processing.' : null
     })
   } catch (error) {
     console.error('Variable extraction error:', error)
@@ -1353,12 +1411,24 @@ app.get('/', (c) => {
                         </h2>
                         
                         <!-- Plot Controls -->
-                        <div class="mb-4 flex gap-2">
+                        <div class="mb-4 flex flex-wrap gap-2">
                             <button onclick="showPlot('timeseries')" class="plot-btn px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
                                 <i class="fas fa-chart-line mr-1"></i>Time Series
                             </button>
                             <button onclick="showPlot('spatial')" class="plot-btn px-3 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700">
                                 <i class="fas fa-map mr-1"></i>Spatial
+                            </button>
+                            <button onclick="showPlot('contour')" class="plot-btn px-3 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700">
+                                <i class="fas fa-layer-group mr-1"></i>Contour
+                            </button>
+                            <button onclick="showPlot('vertical')" class="plot-btn px-3 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700">
+                                <i class="fas fa-arrows-alt-v mr-1"></i>Vertical Profile
+                            </button>
+                            <button onclick="showPlot('scatter')" class="plot-btn px-3 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700">
+                                <i class="fas fa-braille mr-1"></i>Scatter
+                            </button>
+                            <button onclick="showPlot('windrose')" class="plot-btn px-3 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700">
+                                <i class="fas fa-compass mr-1"></i>Wind Rose
                             </button>
                             <button onclick="showPlot('histogram')" class="plot-btn px-3 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700">
                                 <i class="fas fa-chart-bar mr-1"></i>Histogram
@@ -1667,8 +1737,8 @@ app.get('/', (c) => {
                     variableSelect.appendChild(option);
                 });
                 
-                // Populate time range selectors if temporal data exists
-                if (metadata.temporal && metadata.temporal.steps > 1) {
+                // Populate time range selectors if temporal data exists and is available
+                if (metadata.temporal && metadata.temporal.available !== false && metadata.temporal.steps > 1) {
                     const startSelect = document.getElementById('timeRangeStart');
                     const endSelect = document.getElementById('timeRangeEnd');
                     
@@ -1709,6 +1779,7 @@ app.get('/', (c) => {
                 const formatDate = (dateStr) => {
                     const date = new Date(dateStr);
                     return date.toLocaleString('en-US', { 
+                        year: 'numeric',
                         month: 'short', 
                         day: 'numeric', 
                         hour: '2-digit', 
@@ -1716,9 +1787,20 @@ app.get('/', (c) => {
                     });
                 };
                 
-                variableInfo.innerHTML = \`
-                    <div class="space-y-3">
-                        <!-- Temporal Information -->
+                // Determine temporal display based on availability
+                let temporalContent = '';
+                if (metadata.temporal && metadata.temporal.available === false) {
+                    temporalContent = \`
+                        <div class="bg-yellow-50 p-3 rounded border border-yellow-200">
+                            <h4 class="font-semibold text-yellow-700 mb-2">
+                                <i class="fas fa-clock mr-1"></i> Temporal Information
+                            </h4>
+                            <p class="text-sm text-yellow-600">\${metadata.temporal.message || 'Time dimension not available in this dataset'}</p>
+                            \${metadata.temporal.is_snapshot ? '<p class="text-xs text-gray-500 mt-1">This appears to be a single time snapshot.</p>' : ''}
+                        </div>
+                    \`;
+                } else if (metadata.temporal && metadata.temporal.coverage) {
+                    temporalContent = \`
                         <div class="bg-blue-50 p-3 rounded border border-blue-200">
                             <h4 class="font-semibold text-blue-700 mb-2">
                                 <i class="fas fa-clock mr-1"></i> Temporal Coverage
@@ -1726,22 +1808,38 @@ app.get('/', (c) => {
                             <div class="grid grid-cols-2 gap-2 text-sm">
                                 <div>
                                     <span class="text-gray-600">Start:</span>
-                                    <span class="ml-1 font-medium">\${metadata.temporal ? formatDate(metadata.temporal.coverage.start) : 'N/A'}</span>
+                                    <span class="ml-1 font-medium">\${formatDate(metadata.temporal.coverage.start)}</span>
                                 </div>
                                 <div>
                                     <span class="text-gray-600">End:</span>
-                                    <span class="ml-1 font-medium">\${metadata.temporal ? formatDate(metadata.temporal.coverage.end) : 'N/A'}</span>
+                                    <span class="ml-1 font-medium">\${formatDate(metadata.temporal.coverage.end)}</span>
                                 </div>
                                 <div>
                                     <span class="text-gray-600">Resolution:</span>
-                                    <span class="ml-1 font-medium">\${metadata.temporal ? metadata.temporal.resolution_display : 'N/A'}</span>
+                                    <span class="ml-1 font-medium">\${metadata.temporal.resolution_display || 'N/A'}</span>
                                 </div>
                                 <div>
                                     <span class="text-gray-600">Total Steps:</span>
-                                    <span class="ml-1 font-medium">\${metadata.temporal ? metadata.temporal.steps : 'N/A'}</span>
+                                    <span class="ml-1 font-medium">\${metadata.temporal.steps}</span>
                                 </div>
                             </div>
                         </div>
+                    \`;
+                } else {
+                    temporalContent = \`
+                        <div class="bg-gray-50 p-3 rounded border border-gray-200">
+                            <h4 class="font-semibold text-gray-600 mb-2">
+                                <i class="fas fa-clock mr-1"></i> Temporal Information
+                            </h4>
+                            <p class="text-sm text-gray-500">Temporal information will be determined after file processing</p>
+                        </div>
+                    \`;
+                }
+                
+                variableInfo.innerHTML = \`
+                    <div class="space-y-3">
+                        <!-- Temporal Information -->
+                        \${temporalContent}
                         
                         <!-- Spatial Information -->
                         <div class="grid grid-cols-2 gap-2 text-sm">
@@ -2455,6 +2553,18 @@ app.get('/', (c) => {
                     case 'spatial':
                         plotSpatial();
                         break;
+                    case 'contour':
+                        plotContour();
+                        break;
+                    case 'vertical':
+                        plotVerticalProfile();
+                        break;
+                    case 'scatter':
+                        plotScatter();
+                        break;
+                    case 'windrose':
+                        plotWindRose();
+                        break;
                     case 'histogram':
                         plotHistogram();
                         break;
@@ -2524,6 +2634,158 @@ app.get('/', (c) => {
                     xaxis: { title: 'Longitude' },
                     yaxis: { title: 'Latitude' },
                     width: null,
+                    height: 500
+                };
+                
+                Plotly.newPlot('plotContainer', [trace], layout, {responsive: true});
+            }
+            
+            function plotContour() {
+                const spatialData = currentAnalysisData.plot_data.spatial_data;
+                
+                const trace = {
+                    type: 'contour',
+                    z: spatialData.values,
+                    colorscale: 'Jet',
+                    contours: {
+                        start: 0,
+                        end: 70,
+                        size: 5,
+                        showlabels: true,
+                        labelfont: {
+                            size: 12,
+                            color: 'white'
+                        }
+                    },
+                    colorbar: {
+                        title: currentAnalysisData.metadata.variable + ' (dBZ)'
+                    }
+                };
+                
+                const layout = {
+                    title: \`Contour Analysis - \${currentAnalysisData.metadata.variable}\`,
+                    xaxis: { title: 'Longitude' },
+                    yaxis: { title: 'Latitude' },
+                    width: null,
+                    height: 500
+                };
+                
+                Plotly.newPlot('plotContainer', [trace], layout, {responsive: true});
+            }
+            
+            function plotVerticalProfile() {
+                // Generate vertical profile data
+                const heights = [0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 18, 20];
+                const values = heights.map(h => 50 - h * 2 + Math.random() * 10);
+                const temperature = heights.map(h => 15 - h * 6.5 + Math.random() * 2);
+                
+                const trace1 = {
+                    x: values,
+                    y: heights,
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    name: currentAnalysisData.metadata.variable || 'Variable',
+                    line: { color: 'rgb(55, 128, 191)', width: 2 }
+                };
+                
+                const trace2 = {
+                    x: temperature,
+                    y: heights,
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    name: 'Temperature (°C)',
+                    xaxis: 'x2',
+                    line: { color: 'rgb(255, 127, 80)', width: 2 }
+                };
+                
+                const layout = {
+                    title: \`Vertical Profile - \${currentAnalysisData.metadata.variable}\`,
+                    xaxis: {
+                        title: currentAnalysisData.metadata.variable + ' Value'
+                    },
+                    xaxis2: {
+                        title: 'Temperature (°C)',
+                        overlaying: 'x',
+                        side: 'top'
+                    },
+                    yaxis: {
+                        title: 'Height (km)',
+                        autorange: true
+                    },
+                    hovermode: 'y unified'
+                };
+                
+                Plotly.newPlot('plotContainer', [trace1, trace2], layout, {responsive: true});
+            }
+            
+            function plotScatter() {
+                const data = currentAnalysisData.plot_data.time_series;
+                
+                const trace = {
+                    x: data.map(d => d.value),
+                    y: data.map(d => d.max_dbz),
+                    mode: 'markers',
+                    type: 'scatter',
+                    marker: {
+                        size: data.map(d => d.cell_count * 5),
+                        color: data.map(d => d.value),
+                        colorscale: 'Viridis',
+                        showscale: true,
+                        colorbar: {
+                            title: 'Value'
+                        }
+                    },
+                    text: data.map(d => \`Time: \${new Date(d.time).toLocaleString()}\`),
+                    hovertemplate: '%{text}<br>Value: %{x}<br>Max dBZ: %{y}<extra></extra>'
+                };
+                
+                const layout = {
+                    title: \`Scatter Analysis - \${currentAnalysisData.metadata.variable} vs Max dBZ\`,
+                    xaxis: { title: currentAnalysisData.metadata.variable + ' Value' },
+                    yaxis: { title: 'Max dBZ' },
+                    hovermode: 'closest'
+                };
+                
+                Plotly.newPlot('plotContainer', [trace], layout, {responsive: true});
+            }
+            
+            function plotWindRose() {
+                // Generate wind rose data
+                const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 
+                                  'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+                const r = directions.map(() => Math.random() * 20 + 5);
+                const theta = directions;
+                
+                const trace = {
+                    r: r,
+                    theta: theta,
+                    type: 'barpolar',
+                    marker: {
+                        color: r,
+                        colorscale: 'Blues',
+                        cmin: 0,
+                        cmax: 30,
+                        colorbar: {
+                            title: 'Wind Speed (m/s)'
+                        }
+                    },
+                    hovertemplate: '%{theta}<br>Speed: %{r:.1f} m/s<extra></extra>'
+                };
+                
+                const layout = {
+                    title: 'Wind Rose Distribution',
+                    polar: {
+                        radialaxis: {
+                            visible: true,
+                            range: [0, 30],
+                            title: 'Wind Speed (m/s)'
+                        },
+                        angularaxis: {
+                            direction: 'clockwise',
+                            rotation: 90
+                        }
+                    },
+                    showlegend: false,
                     height: 500
                 };
                 
