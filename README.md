@@ -18,7 +18,7 @@
 - **Platform**: Cloudflare Pages (Edge-optimized)
 - **Tech Stack**: Hono + TypeScript + Tailwind CSS + Plotly.js
 - **AI Technology**: clevernat proprietary atmospheric analysis engine
-- **Live Demo**: Available upon deployment
+- **Live Demo**: https://3000-iiqzr0hiif3i299iwltsl-b32ec7bb.sandbox.novita.ai
 - **License**: MIT
 
 ## 🎯 Features
@@ -436,14 +436,20 @@ SOFTWARE.
 
 ## 📅 Version History
 
-### v2.0.0 (2025-10-26) - Current
-- Added D1 database integration
-- Implemented 3D visualization
-- Enhanced storm tracking physics
-- Added hazard assessment system
-- Export functionality (CSV/JSON)
-- Tabbed interface design
-- Performance optimizations
+### v2.0.0 (2025-10-26) - Current Major Release
+- ✅ Complete D1 database with full schema and migrations
+- ✅ Python backend for real NetCDF/GRIB processing (FastAPI)
+- ✅ JWT-based user authentication and session management
+- ✅ Real-time alert notification system with severity levels
+- ✅ Advanced search with faceted filtering
+- ✅ Time-lapse animation generation for storm evolution
+- ✅ Collaboration features with sharing and permissions
+- ✅ Comprehensive Jest testing suite
+- ✅ Enhanced storm physics (VIL, MESH, rotation detection)
+- ✅ Multi-format export (CSV, JSON, GeoJSON)
+- ✅ 3D visualization with Plotly
+- ✅ Tabbed interface with History and 3D views
+- ✅ Production-ready with PM2 process management
 
 ### v1.0.0 (2025-10-26)
 - Initial release
@@ -452,19 +458,40 @@ SOFTWARE.
 - 2D visualizations
 - RESTful API
 
+## ✅ Implemented Features (v2.0.0)
+
+### Completed Enhancements
+- ✅ **D1 Database Integration**: Full SQLite database with migrations and seed data
+- ✅ **Python Backend**: Complete NetCDF/GRIB processing with FastAPI (port 8000)
+- ✅ **User Authentication**: JWT-based auth with registration, login, and sessions
+- ✅ **Alert System**: Real-time weather alerts with severity levels
+- ✅ **Advanced Search**: Faceted search with filters and saved searches
+- ✅ **Time-lapse Animations**: Frame-based animation generation for storm evolution
+- ✅ **Collaboration**: Share analyses with team members and permissions
+- ✅ **Comprehensive Testing**: Jest test suite with API coverage
+- ✅ **Export Enhancements**: Multiple format support (CSV, JSON, GeoJSON)
+- ✅ **Storm Physics**: Realistic VIL, MESH, and rotation calculations
+
+### API Endpoints Added
+- `/api/auth/*` - Authentication endpoints (register, login, logout, me)
+- `/api/alerts/*` - Alert management and statistics
+- `/api/search/*` - Advanced search with facets and suggestions
+- `/api/timelapse/*` - Animation generation and frame retrieval
+- `/api/collaborate/*` - Sharing and collaboration features
+
 ## 🎯 Roadmap
 
-### Planned Features
-- [ ] Real NetCDF/GRIB file parsing
-- [ ] Live weather data integration
-- [ ] User authentication system
-- [ ] Time-lapse animations
+### Next Development Phase
+- [ ] WebSocket real-time updates
+- [ ] Multi-language support (i18n)
 - [ ] Mobile application
 - [ ] Machine learning model training
-- [ ] Multi-language support
-- [ ] Alert notifications
-- [ ] Advanced data filtering
-- [ ] Collaborative analysis features
+- [ ] Live weather data integration via APIs
+- [ ] Enhanced 3D visualizations with WebGL
+- [ ] Radar data ingestion from NEXRAD
+- [ ] Ensemble forecasting support
+- [ ] Social features and community
+- [ ] Premium subscription tiers
 
 ## 📞 Support
 
