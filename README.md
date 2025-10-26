@@ -14,6 +14,9 @@
 - **📊 Improved File Handling** - Better support for GMTED (Global Multi-resolution Terrain Elevation Data) files
 - **🔄 Enhanced Error Recovery** - Application now provides default variables when file parsing encounters issues
 - **📝 Better Error Messages** - More informative feedback when file processing has problems
+- **⏱️ Fixed Analysis Timeout** - Resolved "Error communicating with server" during file analysis
+- **📦 File Size Limits** - Added 50MB file size limit for Cloudflare Workers compatibility
+- **⏳ Client Timeout Handling** - Added 30-second timeout with proper error messages
 
 ### ✨ Version 2.5.0 New Features
 - **🎨 Modern UI Design** - Complete interface overhaul with glassmorphism, animated gradients, and smooth transitions
@@ -172,6 +175,14 @@ The new v2.5.0 interface features a stunning visual redesign with glassmorphism 
 
 ## 🔧 Recent Bug Fixes (v2.5.1)
 
+### Fixed: Analysis Communication Error (v2.5.1)
+**Problem**: Users encountered "Error communicating with server" when analyzing large NetCDF/GRIB files
+**Solution**: Improved timeout handling and file size limits
+- Added 50MB file size limit for Cloudflare Workers compatibility
+- Implemented 30-second client-side timeout with proper error messages
+- Better FormData parsing error handling
+- Clear error messages when files are too large
+
 ### Fixed: Variable Extraction Error (v2.5.1)
 **Problem**: Users encountered "Error extracting variables from file" when uploading NetCDF/GRIB files, particularly GMTED terrain data files
 **Solution**: Improved file parsing with graceful fallback to default variables
@@ -268,7 +279,7 @@ A-CLAT is a cutting-edge web application for analyzing and annotating convective
    - Support for NetCDF, GRIB, and HDF5 formats
    - Automatic variable extraction
    - Temporal information display
-   - File size up to 500MB
+   - File size up to 50MB (Cloudflare Workers limit)
 
 2. **AI-Powered Analysis**
    - Storm classification (Supercell, Mesoscale Convective Complex, etc.)
