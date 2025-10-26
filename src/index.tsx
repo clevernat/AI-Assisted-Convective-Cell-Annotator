@@ -884,7 +884,7 @@ app.get('/api/history', async (c) => {
   }
 })
 
-// ==================== EXPORT ENDPOINT ====================
+// ==================== EXPORT ENDPOINT WITH GEOJSON ====================
 app.post('/api/export', async (c) => {
   try {
     const { format, data } = await c.req.json()
@@ -904,8 +904,40 @@ app.post('/api/export', async (c) => {
           'Content-Disposition': 'attachment; filename="analysis.json"'
         }
       })
+    } else if (format === 'geojson') {
+      // Generate GeoJSON format
+      const features = (data.cells || []).map((cell: any) => ({
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [cell.lon || 0, cell.lat || 0]
+        },
+        properties: {
+          id: cell.id,
+          peak_value: cell.peak_value,
+          area_km2: cell.properties?.area_km2,
+          max_height_km: cell.properties?.max_height_km,
+          vil_kg_m2: cell.properties?.vil_kg_m2,
+          mesh_mm: cell.properties?.mesh_mm,
+          storm_type: cell.storm_type || 'unknown'
+        }
+      }))
+      
+      const geojson = {
+        type: 'FeatureCollection',
+        features: features,
+        metadata: data.metadata,
+        ai_analysis: data.ai_analysis
+      }
+      
+      return new Response(JSON.stringify(geojson, null, 2), {
+        headers: {
+          'Content-Type': 'application/geo+json',
+          'Content-Disposition': 'attachment; filename="analysis.geojson"'
+        }
+      })
     } else {
-      return c.json({ error: 'Invalid format' }, 400)
+      return c.json({ error: 'Invalid format. Supported: csv, json, geojson' }, 400)
     }
   } catch (error) {
     return c.json({ error: 'Export failed' }, 500)
@@ -1010,6 +1042,9 @@ app.get('/', (c) => {
                     </button>
                     <button id="tabTimelapse" class="px-6 py-3 font-semibold text-gray-600 hover:text-blue-600">
                         <i class="fas fa-film mr-2"></i>Time-lapse
+                    </button>
+                    <button id="tab3D" class="px-6 py-3 font-semibold text-gray-600 hover:text-blue-600">
+                        <i class="fas fa-cube mr-2"></i>3D View
                     </button>
                     <button id="tabCollab" class="px-6 py-3 font-semibold text-gray-600 hover:text-blue-600">
                         <i class="fas fa-users mr-2"></i>Collaboration
@@ -1137,6 +1172,24 @@ app.get('/', (c) => {
                 </div>
             </div>
 
+            <!-- 3D View Tab Content -->
+            <div id="3dContent" class="tab-content hidden">
+                <div class="bg-white rounded-xl shadow-lg p-8">
+                    <h2 class="text-2xl font-semibold mb-6 text-gray-800">
+                        <i class="fas fa-cube mr-2 text-purple-500"></i>
+                        3D Storm Structure Visualization
+                    </h2>
+                    <div id="3dControls" class="mb-4">
+                        <button onclick="generate3DView()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                            <i class="fas fa-sync mr-2"></i>Generate 3D View
+                        </button>
+                    </div>
+                    <div id="plot3DContainer" style="width: 100%; height: 500px;">
+                        <!-- 3D Plotly chart will be rendered here -->
+                    </div>
+                </div>
+            </div>
+
             <!-- Collaboration Tab Content -->
             <div id="collabContent" class="tab-content hidden">
                 <div class="bg-white rounded-xl shadow-lg p-8">
@@ -1198,17 +1251,21 @@ app.get('/', (c) => {
             let currentAnalysisData = null;
 
             // Tab management
-            const tabs = ['analysis', 'search', 'alerts', 'history', 'timelapse', 'collab'];
+            const tabs = ['analysis', 'search', 'alerts', 'history', 'timelapse', '3d', 'collab'];
             tabs.forEach(tab => {
-                document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).addEventListener('click', () => {
+                const tabId = tab === '3d' ? 'tab3D' : 'tab' + tab.charAt(0).toUpperCase() + tab.slice(1);
+                const contentId = tab === '3d' ? '3dContent' : tab + 'Content';
+                document.getElementById(tabId).addEventListener('click', () => {
                     showTab(tab);
                 });
             });
 
             function showTab(tabName) {
                 tabs.forEach(tab => {
-                    const btn = document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1));
-                    const content = document.getElementById(tab + 'Content');
+                    const btnId = tab === '3d' ? 'tab3D' : 'tab' + tab.charAt(0).toUpperCase() + tab.slice(1);
+                    const contentId = tab === '3d' ? '3dContent' : tab + 'Content';
+                    const btn = document.getElementById(btnId);
+                    const content = document.getElementById(contentId);
                     
                     if (tab === tabName) {
                         btn.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
@@ -1219,6 +1276,7 @@ app.get('/', (c) => {
                         if (tab === 'history') loadHistory();
                         if (tab === 'alerts') loadAlerts();
                         if (tab === 'collab') loadCollaborations();
+                        if (tab === '3d' && currentAnalysisData) generate3DView();
                     } else {
                         btn.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
                         btn.classList.add('text-gray-600');
@@ -1373,8 +1431,42 @@ app.get('/', (c) => {
                                 ).join('')}
                             </div>
                         </div>
+                        <div class="mt-4 flex gap-2">
+                            <button onclick="exportData('csv')" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                                <i class="fas fa-file-csv mr-2"></i>Export CSV
+                            </button>
+                            <button onclick="exportData('json')" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                                <i class="fas fa-file-code mr-2"></i>Export JSON
+                            </button>
+                            <button onclick="exportData('geojson')" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                                <i class="fas fa-map mr-2"></i>Export GeoJSON
+                            </button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-8">
+                        <h2 class="text-2xl font-semibold mb-6 text-gray-800">
+                            <i class="fas fa-chart-area mr-2 text-green-500"></i>
+                            Cell Analysis
+                        </h2>
+                        <div id="cellsVisualization"></div>
                     </div>
                 \`;
+                
+                // Display cells
+                if (data.cells && data.cells.length > 0) {
+                    displayCells(data.cells);
+                }
+            }
+            
+            function displayCells(cells) {
+                const html = cells.map((cell, idx) => \`
+                    <div class="border p-4 rounded-lg mb-2">
+                        <h4 class="font-semibold">Cell \${idx + 1}</h4>
+                        <p>Peak: \${cell.peak_value?.toFixed(1)} dBZ</p>
+                        <p>Location: \${cell.lat?.toFixed(2)}°N, \${cell.lon?.toFixed(2)}°W</p>
+                    </div>
+                \`).join('');
+                document.getElementById('cellsVisualization').innerHTML = html;
             }
 
             // Search functionality
@@ -1588,6 +1680,126 @@ app.get('/', (c) => {
                 document.getElementById('sharedList').innerHTML = html || '<p>No shared analyses</p>';
             }
 
+            // Export functionality
+            async function exportData(format) {
+                if (!currentAnalysisData) {
+                    alert('No data to export');
+                    return;
+                }
+                
+                const response = await fetch('/api/export', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        format: format,
+                        data: currentAnalysisData
+                    })
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = \`analysis.\${format === 'geojson' ? 'geojson' : format}\`;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                }
+            }
+            
+            // 3D Visualization
+            function generate3DView() {
+                if (!currentAnalysisData || !currentAnalysisData.cells) {
+                    document.getElementById('plot3DContainer').innerHTML = '<p class="text-gray-500">No data available for 3D visualization</p>';
+                    return;
+                }
+                
+                // Prepare 3D data
+                const cells = currentAnalysisData.cells;
+                const x = [], y = [], z = [], intensity = [], text = [];
+                
+                cells.forEach((cell, idx) => {
+                    // Create multiple points for each cell to show volume
+                    for (let h = 0; h < 10; h++) {
+                        const height = h * 2; // Height levels
+                        const attenuatedIntensity = cell.peak_value * Math.exp(-h * 0.2);
+                        
+                        x.push(cell.lon || 0);
+                        y.push(cell.lat || 0);
+                        z.push(height);
+                        intensity.push(attenuatedIntensity);
+                        text.push(\`Cell \${idx + 1}<br>Height: \${height} km<br>dBZ: \${attenuatedIntensity.toFixed(1)}\`);
+                    }
+                });
+                
+                const trace3d = {
+                    x: x,
+                    y: y,
+                    z: z,
+                    mode: 'markers',
+                    marker: {
+                        size: 8,
+                        color: intensity,
+                        colorscale: [
+                            [0, 'rgb(0,0,255)'],
+                            [0.25, 'rgb(0,255,0)'],
+                            [0.5, 'rgb(255,255,0)'],
+                            [0.75, 'rgb(255,128,0)'],
+                            [1, 'rgb(255,0,0)']
+                        ],
+                        showscale: true,
+                        colorbar: {
+                            title: 'Reflectivity (dBZ)',
+                            thickness: 20,
+                            len: 0.5
+                        },
+                        opacity: 0.8
+                    },
+                    text: text,
+                    hovertemplate: '%{text}<extra></extra>',
+                    type: 'scatter3d'
+                };
+                
+                const layout3d = {
+                    title: '3D Storm Structure',
+                    scene: {
+                        xaxis: {
+                            title: 'Longitude',
+                            gridcolor: '#e0e0e0',
+                            showbackground: true,
+                            backgroundcolor: '#f5f5f5'
+                        },
+                        yaxis: {
+                            title: 'Latitude',
+                            gridcolor: '#e0e0e0',
+                            showbackground: true,
+                            backgroundcolor: '#f5f5f5'
+                        },
+                        zaxis: {
+                            title: 'Height (km)',
+                            gridcolor: '#e0e0e0',
+                            showbackground: true,
+                            backgroundcolor: '#f5f5f5'
+                        },
+                        camera: {
+                            eye: {x: 1.5, y: 1.5, z: 1.5}
+                        }
+                    },
+                    margin: {l: 0, r: 0, b: 0, t: 40},
+                    paper_bgcolor: 'white',
+                    plot_bgcolor: 'white'
+                };
+                
+                const config = {
+                    responsive: true,
+                    displayModeBar: true,
+                    displaylogo: false,
+                    modeBarButtonsToRemove: ['lasso2d', 'select2d']
+                };
+                
+                Plotly.newPlot('plot3DContainer', [trace3d], layout3d, config);
+            }
+            
             // Initialize
             checkAuth();
             loadAlerts();
