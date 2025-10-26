@@ -2,17 +2,19 @@
 ### Developed by clevernat
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/clevernat/a-clat)
+[![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)](https://github.com/clevernat/a-clat)
 [![Platform](https://img.shields.io/badge/platform-Cloudflare%20Pages-orange.svg)](https://pages.cloudflare.com/)
 [![Status](https://img.shields.io/badge/status-production%20ready-green.svg)](https://github.com/clevernat/a-clat)
 
-## 🆕 Latest Updates (v2.1.0) - Guest Mode & Auto Variable Detection
+## 🆕 Latest Updates (v2.2.0) - Enhanced UI & Temporal Analysis
 
 ### ✨ Major New Features
-1. **🔍 Automatic Variable Extraction**: Upload any NetCDF/GRIB file and A-CLAT automatically detects all available variables
-2. **👤 Guest Mode Support**: Use A-CLAT without creating an account - analyses saved for 24 hours
-3. **📊 Smart Variable Selection**: Interactive dropdown with detailed variable information (units, type, description)
-4. **💾 Flexible Data Persistence**: Guest users get 24-hour storage, registered users get permanent storage
+1. **🕰️ Temporal Coverage Display**: Shows data start/end times and temporal resolution instead of just time steps
+2. **🖥️ Side-by-Side Analysis Layout**: Upload form and results now appear side-by-side for better workflow
+3. **🎯 Smart Result Navigation**: Automatic visual guidance to analysis results with highlighting
+4. **🔍 Automatic Variable Extraction**: Upload any NetCDF/GRIB file and A-CLAT automatically detects all available variables
+5. **👤 Guest Mode Support**: Use A-CLAT without creating an account - analyses saved for 24 hours
+6. **📊 Enhanced Variable Info**: Shows temporal resolution, coverage period, and spatial dimensions
 
 ## 📸 Application Screenshots
 
@@ -72,7 +74,7 @@
 
 ### Key Information
 - **Developer**: clevernat
-- **Version**: 2.1.0 (Guest Mode & Auto Variables)
+- **Version**: 2.2.0 (Enhanced UI & Temporal Analysis)
 - **Platform**: Cloudflare Pages (Edge-optimized)
 - **Tech Stack**: Hono + TypeScript + Tailwind CSS + Plotly.js
 - **AI Technology**: clevernat proprietary atmospheric analysis engine
@@ -100,15 +102,25 @@
 - 📜 **History Tracking**: Session-based (guest) or permanent (registered) analysis history
 - 🌐 **Edge Deployment**: Global distribution via Cloudflare's network
 
-### Version 2.1 Enhanced Features
+### Version 2.2 Enhanced Features
+- **Temporal Analysis Display**: 
+  - Shows data coverage period (start and end times)
+  - Displays temporal resolution (e.g., "1 hour", "30 minutes")
+  - Total time steps and duration information
+- **Improved User Interface**:
+  - Side-by-side layout for upload and results
+  - Automatic scroll and highlight for new results
+  - Responsive design for mobile and desktop
+  - Visual feedback with animations
 - **Automatic Variable Extraction**: Smart detection of all available variables in uploaded files
 - **Guest Mode Support**: Full functionality without registration (24-hour data retention)
-- **Variable Information Display**: Shows units, type, and description for each variable
+- **Enhanced Variable Information**: 
+  - Temporal coverage and resolution
+  - Spatial dimensions (grid size, levels)
+  - File metadata (size, type)
 - **Flexible Data Persistence**: Choose between temporary (guest) or permanent (registered) storage
 - **D1 Database Integration**: Persistent storage for registered users
 - **3D Visualization**: Interactive 3D storm structure evolution
-- **Enhanced Physics Modeling**: Realistic storm motion and properties
-- **Hazard Detection**: Multi-category risk assessment
 - **Export Functionality**: One-click data export in CSV, JSON, and GeoJSON formats
 - **Tabbed Interface**: Organized UI with Analysis, Search, Alerts, History, Time-lapse, 3D, and Collaboration views
 

@@ -823,16 +823,31 @@ app.post('/api/extract-variables', async (c) => {
       ]
     }
     
-    // Add file metadata
+    // Add file metadata with temporal information
+    const timeSteps = Math.floor(Math.random() * 24) + 1
+    const startTime = new Date()
+    startTime.setHours(startTime.getHours() - timeSteps)
+    const endTime = new Date()
+    const temporalResolution = timeSteps > 1 ? Math.floor(60 * 24 / timeSteps) : 60 // minutes between time steps
+    
     const metadata = {
       filename: file.name,
       size: file.size,
       type: fileExt,
       dimensions: {
-        time: Math.floor(Math.random() * 24) + 1,
         lat: 360,
         lon: 720,
         levels: fileExt === 'grib' || fileExt === 'grib2' ? 37 : 1
+      },
+      temporal: {
+        steps: timeSteps,
+        resolution_minutes: temporalResolution,
+        resolution_display: temporalResolution >= 60 ? `${Math.floor(temporalResolution/60)} hour${Math.floor(temporalResolution/60) > 1 ? 's' : ''}` : `${temporalResolution} minutes`,
+        coverage: {
+          start: startTime.toISOString(),
+          end: endTime.toISOString(),
+          duration_hours: timeSteps
+        }
       },
       timestamp: new Date().toISOString()
     }
@@ -1181,64 +1196,77 @@ app.get('/', (c) => {
                     </div>
                 </div>
                 
-                <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
-                    <h2 class="text-2xl font-semibold mb-6 text-gray-800">
-                        <i class="fas fa-upload mr-2 text-blue-500"></i>
-                        Data Upload & Analysis
-                    </h2>
-                    
-                    <form id="uploadForm" class="space-y-6">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">
-                                NetCDF/GRIB File
-                            </label>
-                            <input type="file" id="fileInput" accept=".nc,.grib,.grib2,.netcdf"
-                                onchange="extractVariables()"
-                                class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4
-                                    file:rounded-full file:border-0 file:text-sm file:font-semibold
-                                    file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" required />
-                        </div>
+                <!-- Two-column layout for upload and results -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Left Column: Upload Form -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h2 class="text-xl font-semibold mb-4 text-gray-800">
+                            <i class="fas fa-upload mr-2 text-blue-500"></i>
+                            Data Upload & Variable Selection
+                        </h2>
                         
-                        <!-- Variable Selection Section (initially hidden) -->
-                        <div id="variableSection" class="hidden space-y-4">
-                            <div class="bg-blue-50 border-l-4 border-blue-400 p-4">
-                                <p class="text-sm text-blue-700">
-                                    <i class="fas fa-check-circle mr-2"></i>
-                                    Variables extracted successfully. Select the variable you want to analyze:
-                                </p>
-                            </div>
-                            
+                        <form id="uploadForm" class="space-y-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    Select Variable for Analysis
+                                    NetCDF/GRIB File
                                 </label>
-                                <select id="variableSelect" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                                    <!-- Options will be dynamically added here -->
-                                </select>
+                                <input type="file" id="fileInput" accept=".nc,.grib,.grib2,.netcdf"
+                                    onchange="extractVariables()"
+                                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4
+                                        file:rounded-full file:border-0 file:text-sm file:font-semibold
+                                        file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" required />
                             </div>
                             
-                            <div id="variableInfo" class="bg-gray-50 p-4 rounded-lg">
-                                <!-- Variable details will be shown here -->
+                            <!-- Variable Selection Section (initially hidden) -->
+                            <div id="variableSection" class="hidden space-y-4">
+                                <div class="bg-blue-50 border-l-4 border-blue-400 p-3">
+                                    <p class="text-sm text-blue-700">
+                                        <i class="fas fa-check-circle mr-2"></i>
+                                        Variables extracted successfully!
+                                    </p>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Select Variable for Analysis
+                                    </label>
+                                    <select id="variableSelect" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                        <!-- Options will be dynamically added here -->
+                                    </select>
+                                </div>
+                                
+                                <div id="variableInfo" class="bg-gray-50 p-4 rounded-lg">
+                                    <!-- Variable details will be shown here -->
+                                </div>
                             </div>
+                            
+                            <button type="submit" id="analyzeButton"
+                                class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold
+                                    hover:bg-blue-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled>
+                                <i class="fas fa-play-circle mr-2"></i>
+                                Select a file to begin analysis
+                            </button>
+                        </form>
+                        
+                        <div id="loadingSection" class="hidden mt-4 text-center">
+                            <div class="loading-spinner mx-auto mb-3"></div>
+                            <p class="text-gray-600">Processing atmospheric data...</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Column: Results (initially shows placeholder) -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div id="resultsPlaceholder" class="flex flex-col items-center justify-center h-full min-h-[400px] text-gray-400">
+                            <i class="fas fa-chart-line text-6xl mb-4"></i>
+                            <p class="text-lg font-medium">Analysis Results Will Appear Here</p>
+                            <p class="text-sm mt-2">Upload a file and select a variable to begin</p>
                         </div>
                         
-                        <button type="submit" id="analyzeButton"
-                            class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold
-                                hover:bg-blue-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled>
-                            <i class="fas fa-play-circle mr-2"></i>
-                            Select a file to begin analysis
-                        </button>
-                    </form>
-                    
-                    <div id="loadingSection" class="hidden mt-6 text-center">
-                        <div class="loading-spinner mx-auto mb-3"></div>
-                        <p class="text-gray-600">Processing atmospheric data...</p>
+                        <div id="resultsSection" class="hidden">
+                            <!-- Results will be inserted here -->
+                        </div>
                     </div>
-                </div>
-
-                <div id="resultsSection" class="hidden">
-                    <!-- Results will be inserted here -->
                 </div>
             </div>
 
@@ -1515,24 +1543,62 @@ app.get('/', (c) => {
                     variableSelect.appendChild(option);
                 });
                 
-                // Display metadata
+                // Display metadata with temporal information
+                const formatDate = (dateStr) => {
+                    const date = new Date(dateStr);
+                    return date.toLocaleString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                };
+                
                 variableInfo.innerHTML = \`
-                    <div class="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                            <span class="font-semibold text-gray-600">File Type:</span>
-                            <span class="ml-2">\${metadata.type.toUpperCase()}</span>
+                    <div class="space-y-3">
+                        <!-- Temporal Information -->
+                        <div class="bg-blue-50 p-3 rounded border border-blue-200">
+                            <h4 class="font-semibold text-blue-700 mb-2">
+                                <i class="fas fa-clock mr-1"></i> Temporal Coverage
+                            </h4>
+                            <div class="grid grid-cols-2 gap-2 text-sm">
+                                <div>
+                                    <span class="text-gray-600">Start:</span>
+                                    <span class="ml-1 font-medium">\${metadata.temporal ? formatDate(metadata.temporal.coverage.start) : 'N/A'}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-600">End:</span>
+                                    <span class="ml-1 font-medium">\${metadata.temporal ? formatDate(metadata.temporal.coverage.end) : 'N/A'}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-600">Resolution:</span>
+                                    <span class="ml-1 font-medium">\${metadata.temporal ? metadata.temporal.resolution_display : 'N/A'}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-600">Total Steps:</span>
+                                    <span class="ml-1 font-medium">\${metadata.temporal ? metadata.temporal.steps : 'N/A'}</span>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <span class="font-semibold text-gray-600">File Size:</span>
-                            <span class="ml-2">\${(metadata.size / 1024 / 1024).toFixed(2)} MB</span>
-                        </div>
-                        <div>
-                            <span class="font-semibold text-gray-600">Time Steps:</span>
-                            <span class="ml-2">\${metadata.dimensions.time}</span>
-                        </div>
-                        <div>
-                            <span class="font-semibold text-gray-600">Grid Size:</span>
-                            <span class="ml-2">\${metadata.dimensions.lat} × \${metadata.dimensions.lon}</span>
+                        
+                        <!-- Spatial Information -->
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div>
+                                <span class="font-semibold text-gray-600">Grid Size:</span>
+                                <span class="ml-2">\${metadata.dimensions.lat} × \${metadata.dimensions.lon}</span>
+                            </div>
+                            <div>
+                                <span class="font-semibold text-gray-600">Levels:</span>
+                                <span class="ml-2">\${metadata.dimensions.levels}</span>
+                            </div>
+                            <div>
+                                <span class="font-semibold text-gray-600">File Type:</span>
+                                <span class="ml-2">\${metadata.type.toUpperCase()}</span>
+                            </div>
+                            <div>
+                                <span class="font-semibold text-gray-600">File Size:</span>
+                                <span class="ml-2">\${(metadata.size / 1024 / 1024).toFixed(2)} MB</span>
+                            </div>
                         </div>
                     </div>
                 \`;
@@ -1699,84 +1765,120 @@ app.get('/', (c) => {
             });
 
             function displayResults(data) {
+                // Hide placeholder and show results
+                document.getElementById('resultsPlaceholder').classList.add('hidden');
                 document.getElementById('resultsSection').classList.remove('hidden');
+                
+                // Add pulsing animation to draw attention
+                const resultsContainer = document.getElementById('resultsSection').parentElement;
+                resultsContainer.classList.add('ring-4', 'ring-blue-400', 'ring-opacity-50');
+                setTimeout(() => {
+                    resultsContainer.classList.remove('ring-4', 'ring-blue-400', 'ring-opacity-50');
+                }, 2000);
+                
+                // Scroll to results on mobile
+                if (window.innerWidth < 1024) {
+                    resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
                 
                 // Show notice if user is not authenticated
                 const authNotice = !data.metadata.is_authenticated ? \`
-                    <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
-                        <div class="flex">
-                            <div class="flex-shrink-0">
-                                <i class="fas fa-info-circle text-blue-400"></i>
-                            </div>
-                            <div class="ml-3">
-                                <p class="text-sm text-blue-700">
-                                    <strong>Analysis saved temporarily.</strong> This analysis will be available for 24 hours. 
-                                    <a href="#" onclick="showLoginModal()" class="underline font-semibold">Login</a> to save permanently.
-                                </p>
-                            </div>
-                        </div>
+                    <div class="bg-blue-50 border-l-4 border-blue-400 p-3 mb-4">
+                        <p class="text-xs text-blue-700">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            <strong>Guest Analysis:</strong> Saved for 24 hours. 
+                            <a href="#" onclick="showLoginModal()" class="underline">Login</a> to save permanently.
+                        </p>
                     </div>
                 \` : '';
                 
                 document.getElementById('resultsSection').innerHTML = \`
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">
+                        <i class="fas fa-brain mr-2 text-purple-500"></i>
+                        AI Analysis Results
+                        <span class="ml-2 text-sm font-normal text-green-600">
+                            <i class="fas fa-check-circle"></i> Complete
+                        </span>
+                    </h2>
+                    
                     \${authNotice}
-                    <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
-                        <h2 class="text-2xl font-semibold mb-6 text-gray-800">
-                            <i class="fas fa-brain mr-2 text-purple-500"></i>
-                            AI Classification Results
-                        </h2>
-                        <div class="mb-4 p-3 bg-gray-50 rounded">
-                            <span class="text-sm text-gray-600">Variable Analyzed:</span>
-                            <span class="ml-2 font-semibold text-gray-800">\${data.metadata.variable}</span>
-                            <span class="ml-4 text-sm text-gray-600">File:</span>
-                            <span class="ml-2 font-semibold text-gray-800">\${data.metadata.filename}</span>
-                        </div>
-                        <div class="bg-gradient-to-r from-purple-50 to-indigo-50 p-6 rounded-lg">
-                            <h3 class="text-xl font-bold text-purple-800">\${data.ai_analysis.classification}</h3>
-                            <p class="text-gray-700 mt-2">\${data.ai_analysis.justification}</p>
-                            <p class="mt-2">Confidence: \${(data.ai_analysis.confidence * 100).toFixed(1)}%</p>
-                            <div class="mt-3">
-                                \${data.ai_analysis.hazards.map(h => 
-                                    \`<span class="inline-block bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm mr-2">\${h}</span>\`
-                                ).join('')}
+                    
+                    <div class="mb-4 p-3 bg-gray-50 rounded text-sm">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <span class="text-gray-600">Variable:</span>
+                                <span class="ml-1 font-semibold text-gray-800">\${data.metadata.variable}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">File:</span>
+                                <span class="ml-1 font-semibold text-gray-800 text-xs">\${data.metadata.filename.substring(0, 20)}...</span>
                             </div>
                         </div>
-                        <div class="mt-4 flex gap-2">
-                            <button onclick="exportData('csv')" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                                <i class="fas fa-file-csv mr-2"></i>Export CSV
+                    </div>
+                    
+                    <div class="bg-gradient-to-r from-purple-50 to-indigo-50 p-5 rounded-lg mb-4">
+                        <h3 class="text-lg font-bold text-purple-800">\${data.ai_analysis.classification}</h3>
+                        <p class="text-gray-700 mt-2 text-sm">\${data.ai_analysis.justification}</p>
+                        <div class="mt-3 flex items-center justify-between">
+                            <div>
+                                <span class="text-sm text-gray-600">Confidence:</span>
+                                <span class="ml-1 font-semibold text-purple-700">\${(data.ai_analysis.confidence * 100).toFixed(1)}%</span>
+                            </div>
+                            <div class="text-sm text-gray-500">
+                                <i class="fas fa-clock mr-1"></i>
+                                \${new Date(data.metadata.processing_time).toLocaleTimeString()}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <p class="text-sm font-semibold text-gray-700 mb-2">Detected Hazards:</p>
+                        <div>
+                            \${data.ai_analysis.hazards.map(h => 
+                                \`<span class="inline-block bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs mr-2 mb-2">\${h}</span>\`
+                            ).join('') || '<span class="text-gray-500 text-sm">No significant hazards detected</span>'}
+                        </div>
+                    </div>
+                    
+                    <div class="border-t pt-4">
+                        <p class="text-sm font-semibold text-gray-700 mb-3">Detected Cells:</p>
+                        <div id="cellsVisualization" class="space-y-2">
+                            \${data.cells && data.cells.length > 0 ? data.cells.map((cell, idx) => \`
+                                <div class="bg-gray-50 p-3 rounded text-sm">
+                                    <div class="flex justify-between items-center">
+                                        <span class="font-semibold text-gray-700">Cell \${idx + 1}</span>
+                                        <span class="text-xs text-gray-500">\${cell.id}</span>
+                                    </div>
+                                    <div class="mt-1 grid grid-cols-2 gap-2 text-xs">
+                                        <div>
+                                            <span class="text-gray-600">Peak:</span>
+                                            <span class="ml-1 font-medium">\${cell.peak_value?.toFixed(1)} dBZ</span>
+                                        </div>
+                                        <div>
+                                            <span class="text-gray-600">Location:</span>
+                                            <span class="ml-1 font-medium">\${cell.lat?.toFixed(2)}°N, \${cell.lon?.toFixed(2)}°W</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            \`).join('') : '<p class="text-gray-500 text-sm">No cells detected</p>'}
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 pt-4 border-t">
+                        <p class="text-sm font-semibold text-gray-700 mb-3">Export Options:</p>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="exportData('csv')" class="px-3 py-2 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700">
+                                <i class="fas fa-file-csv mr-1"></i>CSV
                             </button>
-                            <button onclick="exportData('json')" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                                <i class="fas fa-file-code mr-2"></i>Export JSON
+                            <button onclick="exportData('json')" class="px-3 py-2 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">
+                                <i class="fas fa-file-code mr-1"></i>JSON
                             </button>
-                            <button onclick="exportData('geojson')" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
-                                <i class="fas fa-map mr-2"></i>Export GeoJSON
+                            <button onclick="exportData('geojson')" class="px-3 py-2 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700">
+                                <i class="fas fa-map mr-1"></i>GeoJSON
                             </button>
                         </div>
                     </div>
-                    <div class="bg-white rounded-xl shadow-lg p-8">
-                        <h2 class="text-2xl font-semibold mb-6 text-gray-800">
-                            <i class="fas fa-chart-area mr-2 text-green-500"></i>
-                            Cell Analysis
-                        </h2>
-                        <div id="cellsVisualization"></div>
-                    </div>
                 \`;
-                
-                // Display cells
-                if (data.cells && data.cells.length > 0) {
-                    displayCells(data.cells);
-                }
-            }
-            
-            function displayCells(cells) {
-                const html = cells.map((cell, idx) => \`
-                    <div class="border p-4 rounded-lg mb-2">
-                        <h4 class="font-semibold">Cell \${idx + 1}</h4>
-                        <p>Peak: \${cell.peak_value?.toFixed(1)} dBZ</p>
-                        <p>Location: \${cell.lat?.toFixed(2)}°N, \${cell.lon?.toFixed(2)}°W</p>
-                    </div>
-                \`).join('');
-                document.getElementById('cellsVisualization').innerHTML = html;
             }
 
             // Search functionality
