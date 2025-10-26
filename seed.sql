@@ -8,25 +8,22 @@ INSERT OR IGNORE INTO users (id, email, username, password_hash, full_name, role
   ('user_3', 'user@example.com', 'weatherfan', '$2a$10$XQq2o2D8.PQZ1F7H4yH6OuFwwJ9YqSa6R8oV6V0O5ZT0ChnJtBgVm', 'John Doe', 'user', 'api_key_user_789', 1);
 
 -- Insert test analyses
-INSERT OR IGNORE INTO analyses (id, filename, variable, classification, confidence, justification, cells_data, hazards, statistics, processing_time_ms, file_size_bytes) VALUES 
+INSERT OR IGNORE INTO analyses (id, filename, variable, classification, confidence, justification, cells_data, statistics, processing_time_ms, file_size_bytes) VALUES 
   ('analysis_001', 'storm_20250726_1200.nc', 'Z', 'Supercell', 0.92, 
    'Supercell structure identified with maximum reflectivity of 68.5 dBZ and mesocyclone presence. VIL values reaching 65.2 kg/m² indicate significant hail potential.',
    '[{"id":"cell_1","peak_value":68.5,"lat":35.2,"lon":-97.4}]',
-   '["Large Hail","Tornado Possible","Damaging Winds"]',
    '{"max_peak_dbz":68.5,"avg_peak_dbz":62.3,"max_vil_kg_m2":65.2}',
    2450, 15234567),
   
   ('analysis_002', 'mcs_20250725_1800.grib2', 'REFL', 'MCS', 0.88,
    'Mesoscale Convective System with 12 active cells showing organized structure.',
    '[{"id":"cell_1","peak_value":58.2,"lat":38.9,"lon":-94.6}]',
-   '["Flash Flooding","Damaging Winds"]',
    '{"max_peak_dbz":58.2,"avg_peak_dbz":52.1,"max_vil_kg_m2":42.5}',
    3200, 28456789),
   
   ('analysis_003', 'squall_20250724_2100.nc', 'DBZ', 'Squall Line', 0.85,
    'Linear convective system detected with cells aligned along boundary.',
    '[{"id":"cell_1","peak_value":55.8,"lat":41.2,"lon":-88.3}]',
-   '["Damaging Winds","Heavy Rain"]',
    '{"max_peak_dbz":55.8,"avg_peak_dbz":48.9,"max_vil_kg_m2":35.7}',
    1890, 9876543);
 

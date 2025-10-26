@@ -3,7 +3,7 @@ import { cors } from 'hono/cors'
 import { serveStatic } from 'hono/cloudflare-workers'
 import { sign, verify } from 'hono/jwt'
 import { setCookie, getCookie } from 'hono/cookie'
-// Using Web Crypto API for password hashing instead of bcryptjs
+import * as bcrypt from 'bcryptjs'
 
 type Bindings = {
   DB?: D1Database;
@@ -153,16 +153,12 @@ async function verifyToken(token: string, secret: string) {
 }
 
 async function hashPassword(password: string): Promise<string> {
-  // Simple hash using Web Crypto API for Cloudflare Workers
-  const encoder = new TextEncoder()
-  const data = encoder.encode(password + 'salt-key-2025')
-  const hash = await crypto.subtle.digest('SHA-256', data)
-  return btoa(String.fromCharCode(...new Uint8Array(hash)))
+  const salt = await bcrypt.genSalt(10)
+  return await bcrypt.hash(password, salt)
 }
 
 async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  const newHash = await hashPassword(password)
-  return newHash === hash
+  return await bcrypt.compare(password, hash)
 }
 
 // Middleware to protect routes
@@ -243,7 +239,7 @@ app.post('/api/auth/register', async (c) => {
 
   return c.json({
     success: true,
-    user: { id: userId, email, username, full_name, api_key: apiKey },
+    user: { id: userId, email, username, full_name, api_key },
     token
   })
 })

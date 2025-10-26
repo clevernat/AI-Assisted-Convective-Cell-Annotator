@@ -37,6 +37,7 @@
     "python:dev": "cd python_backend && python app.py"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.2",
     "formdata-node": "^6.0.3",
     "gif.js": "^0.2.0",
     "hono": "^4.10.3",
