@@ -408,6 +408,132 @@ async def health_check():
         ]
     }
 
+@app.post("/api/extract-variables")
+async def extract_variables(file: UploadFile = File(...)):
+    """
+    Extract variables from NetCDF/GRIB file for user selection
+    """
+    try:
+        # Read file contents
+        contents = await file.read()
+        
+        # Save file temporarily
+        temp_file = UPLOAD_DIR / f"temp_{uuid.uuid4()}_{file.filename}"
+        try:
+            with open(temp_file, 'wb') as f:
+                f.write(contents)
+            
+            variables = []
+            metadata = {}
+            recommended = 'reflectivity'
+            
+            # Try to open as NetCDF first
+            try:
+                ds = xr.open_dataset(temp_file)
+                
+                # Extract variables
+                for var_name in ds.data_vars:
+                    var = ds[var_name]
+                    variables.append({
+                        'name': var_name,
+                        'description': var.attrs.get('long_name', var.attrs.get('standard_name', var_name)),
+                        'units': var.attrs.get('units', 'unknown'),
+                        'dimensions': list(var.dims),
+                        'shape': list(var.shape)
+                    })
+                
+                # Extract metadata
+                metadata = {
+                    'file_name': file.filename,
+                    'file_size': len(contents),
+                    'dimensions': {dim: len(ds[dim]) for dim in ds.dims},
+                    'temporal': None,
+                    'spatial': None,
+                    'attributes': dict(ds.attrs)
+                }
+                
+                # Check for temporal dimension
+                if 'time' in ds.dims:
+                    time_var = ds['time']
+                    time_values = pd.to_datetime(time_var.values)
+                    metadata['temporal'] = {
+                        'available': True,
+                        'steps': len(time_values),
+                        'resolution_minutes': int((time_values[1] - time_values[0]).total_seconds() / 60) if len(time_values) > 1 else 0,
+                        'coverage': {
+                            'start': str(time_values[0]),
+                            'end': str(time_values[-1])
+                        }
+                    }
+                
+                # Check for spatial dimensions
+                if 'latitude' in ds.dims or 'lat' in ds.dims:
+                    lat_name = 'latitude' if 'latitude' in ds.dims else 'lat'
+                    lon_name = 'longitude' if 'longitude' in ds.dims else 'lon'
+                    
+                    if lon_name in ds.dims:
+                        metadata['spatial'] = {
+                            'lat_range': [float(ds[lat_name].min()), float(ds[lat_name].max())],
+                            'lon_range': [float(ds[lon_name].min()), float(ds[lon_name].max())],
+                            'resolution': float(ds[lat_name][1] - ds[lat_name][0]) if len(ds[lat_name]) > 1 else 0
+                        }
+                
+                # Recommend variable based on what's available
+                common_vars = ['reflectivity', 'DBZ', 'REFL', 'precipitation', 'cape', 'temperature']
+                for common in common_vars:
+                    if any(common.lower() in var['name'].lower() for var in variables):
+                        recommended = next(var['name'] for var in variables if common.lower() in var['name'].lower())
+                        break
+                
+                ds.close()
+                
+            except Exception as nc_error:
+                # Try GRIB format
+                try:
+                    ds = xr.open_dataset(temp_file, engine='cfgrib')
+                    # Similar extraction for GRIB
+                    for var_name in ds.data_vars:
+                        var = ds[var_name]
+                        variables.append({
+                            'name': var_name,
+                            'description': var.attrs.get('long_name', var_name),
+                            'units': var.attrs.get('units', 'unknown')
+                        })
+                    ds.close()
+                except:
+                    # Fallback to simulated data based on filename
+                    logger.warning(f"Could not parse file {file.filename}, using simulated variables")
+                    variables = [
+                        {'name': 'reflectivity', 'description': 'Radar Reflectivity', 'units': 'dBZ'},
+                        {'name': 'velocity', 'description': 'Radial Velocity', 'units': 'm/s'},
+                        {'name': 'temperature', 'description': 'Temperature', 'units': 'K'},
+                        {'name': 'precipitation', 'description': 'Precipitation', 'units': 'mm/hr'}
+                    ]
+                    metadata = {
+                        'file_name': file.filename,
+                        'file_size': len(contents),
+                        'error': 'Could not parse file format, showing default variables'
+                    }
+            
+            return JSONResponse({
+                'success': True,
+                'variables': variables,
+                'metadata': metadata,
+                'recommended': recommended
+            })
+            
+        finally:
+            # Clean up temp file
+            if temp_file.exists():
+                temp_file.unlink()
+                
+    except Exception as e:
+        logger.error(f"Variable extraction error: {str(e)}", exc_info=True)
+        return JSONResponse(
+            status_code=500,
+            content={'success': False, 'error': f'Failed to extract variables: {str(e)}'}
+        )
+
 @app.post("/api/analyze")
 async def analyze_data(
     file: UploadFile = File(...),

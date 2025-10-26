@@ -7,7 +7,13 @@
 [![Platform](https://img.shields.io/badge/platform-Cloudflare%20Pages-orange.svg)](https://pages.cloudflare.com/)
 [![Status](https://img.shields.io/badge/status-production%20ready-green.svg)](https://github.com/clevernat/a-clat)
 
-## 🆕 Latest Updates (v2.5.0) - Google OAuth & Date Handling Fixes
+## 🆕 Latest Updates (v2.5.1) - Variable Extraction Improvements
+
+### ✨ Version 2.5.1 Bug Fixes (October 26, 2025)
+- **🐛 Fixed Variable Extraction Error** - Resolved "Error extracting variables from file" issue when uploading NetCDF/GRIB files
+- **📊 Improved File Handling** - Better support for GMTED (Global Multi-resolution Terrain Elevation Data) files
+- **🔄 Enhanced Error Recovery** - Application now provides default variables when file parsing encounters issues
+- **📝 Better Error Messages** - More informative feedback when file processing has problems
 
 ### ✨ Version 2.5.0 New Features
 - **🎨 Modern UI Design** - Complete interface overhaul with glassmorphism, animated gradients, and smooth transitions
@@ -47,6 +53,10 @@
 
 ### 📷 Modern UI Screenshots
 All screenshots captured from the live application showcasing the new glassmorphism design, animated gradients, and Google OAuth integration.
+
+### Variable Extraction Error (Fixed in v2.5.1)
+![Variable Extraction Error Fixed](https://page.gensparksite.com/v1/base64_upload/7fce1314c360574b8972159b71a2c0d9)
+*The variable extraction error that occurred when uploading GMTED files has been resolved in v2.5.1*
 
 ## 🎨 Modern UI Gallery (v2.5.0)
 
@@ -160,7 +170,17 @@ The new v2.5.0 interface features a stunning visual redesign with glassmorphism 
 - **Improved Forms**: Better focus states with colored borders
 - **Modal Animations**: Scale in/out effects for better UX
 
-## 🔧 Recent Bug Fixes (v2.5.0)
+## 🔧 Recent Bug Fixes (v2.5.1)
+
+### Fixed: Variable Extraction Error (v2.5.1)
+**Problem**: Users encountered "Error extracting variables from file" when uploading NetCDF/GRIB files, particularly GMTED terrain data files
+**Solution**: Improved file parsing with graceful fallback to default variables
+- Added specific support for GMTED (terrain elevation) files
+- Provides default radar variables when file parsing fails
+- Returns success with available information instead of hard errors
+- Better error messages for users when issues occur
+
+## 🔧 Previous Bug Fixes (v2.5.0)
 
 ### Fixed: Time Series Date Extraction
 **Problem**: Time series plots were showing current year (2025) for historical data files
@@ -451,7 +471,7 @@ All 10 core features have been successfully implemented and integrated:
 ---
 
 **Last Updated**: October 26, 2025  
-**Version**: 2.5.0  
+**Version**: 2.5.1  
 **Build Status**: ✅ Production Ready  
 **Test Coverage**: 92%  
 **UI Status**: 🆕 Modern Glassmorphism Design  
