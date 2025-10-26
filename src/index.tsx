@@ -1376,105 +1376,276 @@ app.get('/', (c) => {
         <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
+            /* Modern color palette */
+            :root {
+                --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                --success-gradient: linear-gradient(135deg, #0cbb63 0%, #00b47a 100%);
+                --dark-gradient: linear-gradient(135deg, #434343 0%, #1f1f1f 100%);
+                --glass-bg: rgba(255, 255, 255, 0.7);
+                --glass-border: rgba(255, 255, 255, 0.3);
+            }
+
+            /* Glassmorphism effect */
+            .glass {
+                background: var(--glass-bg);
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+                border: 1px solid var(--glass-border);
+                box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            }
+
+            /* Modern animated background */
+            .animated-bg {
+                background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+                background-size: 400% 400%;
+                animation: gradient 15s ease infinite;
+            }
+
+            @keyframes gradient {
+                0% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+            }
+
+            /* Smooth loading spinner */
             .loading-spinner {
-                border: 4px solid #f3f3f3;
-                border-top: 4px solid #3b82f6;
+                width: 48px;
+                height: 48px;
+                border: 3px solid transparent;
                 border-radius: 50%;
-                width: 40px;
-                height: 40px;
+                background: linear-gradient(45deg, #667eea, #764ba2) border-box;
+                -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+                -webkit-mask-composite: xor;
+                mask-composite: exclude;
                 animation: spin 1s linear infinite;
             }
+
             @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
+                to { transform: rotate(360deg); }
             }
+
+            /* Feature card with modern hover effect */
             .feature-card {
+                transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                position: relative;
+                overflow: hidden;
+            }
+
+            .feature-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+                transition: left 0.5s;
+            }
+
+            .feature-card:hover {
+                transform: translateY(-8px) scale(1.02);
+                box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            }
+
+            .feature-card:hover::before {
+                left: 100%;
+            }
+
+            /* Modern buttons */
+            .btn-primary {
+                background: var(--primary-gradient);
+                color: white;
+                position: relative;
+                overflow: hidden;
                 transition: all 0.3s ease;
             }
-            .feature-card:hover {
-                transform: translateY(-4px);
-                box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+
+            .btn-primary::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 0;
+                height: 100%;
+                background: rgba(255,255,255,0.2);
+                transition: width 0.3s ease;
+            }
+
+            .btn-primary:hover::before {
+                width: 100%;
+            }
+
+            .btn-primary:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+            }
+
+            /* Tab navigation */
+            .tab-btn {
+                position: relative;
+                transition: all 0.3s ease;
+            }
+
+            .tab-btn::after {
+                content: '';
+                position: absolute;
+                bottom: 0;
+                left: 50%;
+                width: 0;
+                height: 3px;
+                background: var(--primary-gradient);
+                transition: all 0.3s ease;
+                transform: translateX(-50%);
+            }
+
+            .tab-btn:hover::after,
+            .tab-btn.active::after {
+                width: 80%;
+            }
+
+            .tab-btn.active {
+                background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            }
+
+            /* Smooth fade animations */
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            .fade-in {
+                animation: fadeIn 0.5s ease;
+            }
+
+            /* Custom scrollbar */
+            ::-webkit-scrollbar {
+                width: 10px;
+            }
+
+            ::-webkit-scrollbar-track {
+                background: rgba(255, 255, 255, 0.1);
+            }
+
+            ::-webkit-scrollbar-thumb {
+                background: var(--primary-gradient);
+                border-radius: 10px;
+            }
+
+            ::-webkit-scrollbar-thumb:hover {
+                background: var(--secondary-gradient);
+            }
+
+            /* Modern modal overlay */
+            .modal-overlay {
+                backdrop-filter: blur(5px);
+                -webkit-backdrop-filter: blur(5px);
+            }
+
+            /* Floating labels */
+            .floating-label {
+                transition: all 0.3s ease;
+            }
+
+            /* Pulse animation for alerts */
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.05); }
+            }
+
+            .pulse {
+                animation: pulse 2s infinite;
             }
         </style>
     </head>
-    <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <body class="animated-bg min-h-screen">
         <div class="container mx-auto px-4 py-8 max-w-7xl">
-            <!-- Header with Auth Status -->
-            <header class="text-center mb-10">
-                <div class="flex justify-between items-center mb-4">
-                    <div class="flex-1">
-                        <h1 class="text-4xl font-bold text-gray-800 mb-3">
-                            <i class="fas fa-cloud-bolt text-blue-600 mr-3"></i>
-                            A-CLAT v2.0.0
-                        </h1>
-                        <p class="text-xl text-gray-600">AI-Assisted Convective Cell Annotator</p>
-                    </div>
-                    <div id="authSection" class="text-right">
-                        <button onclick="showLoginModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                            <i class="fas fa-sign-in-alt mr-2"></i>Login
-                        </button>
-                        <button onclick="showRegisterModal()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 ml-2">
-                            <i class="fas fa-user-plus mr-2"></i>Register
-                        </button>
+            <!-- Modern Header with Glass Effect -->
+            <header class="text-center mb-10 fade-in">
+                <div class="glass rounded-2xl p-6 mb-4">
+                    <div class="flex justify-between items-center">
+                        <div class="flex-1">
+                            <h1 class="text-5xl font-black mb-3 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                                <i class="fas fa-cloud-bolt mr-3 text-blue-600"></i>
+                                A-CLAT v2.5.0
+                            </h1>
+                            <p class="text-xl text-gray-700 font-medium">AI-Assisted Convective Cell Annotator</p>
+                        </div>
+                        <div id="authSection" class="text-right">
+                            <button onclick="showLoginModal()" class="px-6 py-3 btn-primary rounded-xl font-semibold mr-3 shadow-lg">
+                                <i class="fas fa-sign-in-alt mr-2"></i>Login
+                            </button>
+                            <button onclick="showRegisterModal()" class="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transform transition-all hover:-translate-y-1">
+                                <i class="fas fa-user-plus mr-2"></i>Register
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <div id="alertBanner" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">
-                    <p class="font-bold">Active Alerts</p>
-                    <p id="alertMessage"></p>
+                <div id="alertBanner" class="hidden glass bg-red-50/70 border-l-4 border-red-500 text-red-700 p-4 rounded-lg pulse">
+                    <p class="font-bold"><i class="fas fa-exclamation-triangle mr-2"></i>Active Alerts</p>
+                    <p id="alertMessage" class="mt-1"></p>
                 </div>
             </header>
 
-            <!-- Tab Navigation -->
-            <div class="flex justify-center mb-8">
-                <div class="bg-white rounded-lg shadow-md">
-                    <button id="tabAnalysis" class="px-6 py-3 font-semibold text-blue-600 border-b-2 border-blue-600">
-                        <i class="fas fa-chart-line mr-2"></i>Analysis
-                    </button>
-                    <button id="tabSearch" class="px-6 py-3 font-semibold text-gray-600 hover:text-blue-600">
-                        <i class="fas fa-search mr-2"></i>Search
-                    </button>
-                    <button id="tabAlerts" class="px-6 py-3 font-semibold text-gray-600 hover:text-blue-600">
-                        <i class="fas fa-bell mr-2"></i>Alerts
-                        <span id="alertCount" class="hidden ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">0</span>
-                    </button>
-                    <button id="tabHistory" class="px-6 py-3 font-semibold text-gray-600 hover:text-blue-600">
-                        <i class="fas fa-history mr-2"></i>History
-                    </button>
-                    <button id="tabTimelapse" class="px-6 py-3 font-semibold text-gray-600 hover:text-blue-600">
-                        <i class="fas fa-film mr-2"></i>Time-lapse
-                    </button>
-                    <button id="tab3D" class="px-6 py-3 font-semibold text-gray-600 hover:text-blue-600">
-                        <i class="fas fa-cube mr-2"></i>3D View
-                    </button>
-                    <button id="tabCollab" class="px-6 py-3 font-semibold text-gray-600 hover:text-blue-600">
-                        <i class="fas fa-users mr-2"></i>Collaboration
-                    </button>
+            <!-- Modern Tab Navigation with Glass Effect -->
+            <div class="flex justify-center mb-8 fade-in" style="animation-delay: 0.1s;">
+                <div class="glass rounded-2xl p-2 shadow-xl">
+                    <div class="flex space-x-2">
+                        <button id="tabAnalysis" class="tab-btn px-6 py-3 font-semibold text-purple-700 rounded-xl active">
+                            <i class="fas fa-chart-line mr-2"></i>Analysis
+                        </button>
+                        <button id="tabSearch" class="tab-btn px-6 py-3 font-semibold text-gray-700 hover:text-purple-700 rounded-xl transition-colors">
+                            <i class="fas fa-search mr-2"></i>Search
+                        </button>
+                        <button id="tabAlerts" class="tab-btn px-6 py-3 font-semibold text-gray-700 hover:text-purple-700 rounded-xl transition-colors relative">
+                            <i class="fas fa-bell mr-2"></i>Alerts
+                            <span id="alertCount" class="hidden absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs px-2 py-1 rounded-full">0</span>
+                        </button>
+                        <button id="tabHistory" class="tab-btn px-6 py-3 font-semibold text-gray-700 hover:text-purple-700 rounded-xl transition-colors">
+                            <i class="fas fa-history mr-2"></i>History
+                        </button>
+                        <button id="tabTimelapse" class="tab-btn px-6 py-3 font-semibold text-gray-700 hover:text-purple-700 rounded-xl transition-colors">
+                            <i class="fas fa-film mr-2"></i>Time-lapse
+                        </button>
+                        <button id="tab3D" class="tab-btn px-6 py-3 font-semibold text-gray-700 hover:text-purple-700 rounded-xl transition-colors">
+                            <i class="fas fa-cube mr-2"></i>3D View
+                        </button>
+                        <button id="tabCollab" class="tab-btn px-6 py-3 font-semibold text-gray-700 hover:text-purple-700 rounded-xl transition-colors">
+                            <i class="fas fa-users mr-2"></i>Collaboration
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <!-- Analysis Tab Content -->
             <div id="analysisContent" class="tab-content">
-                <!-- Anonymous User Notice -->
-                <div id="anonymousNotice" class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+                <!-- Modern Anonymous User Notice -->
+                <div id="anonymousNotice" class="glass bg-gradient-to-r from-yellow-50/80 to-orange-50/80 border-l-4 border-yellow-500 p-4 mb-6 rounded-xl shadow-lg fade-in">
                     <div class="flex">
                         <div class="flex-shrink-0">
-                            <i class="fas fa-info-circle text-yellow-400"></i>
+                            <i class="fas fa-info-circle text-yellow-600 text-xl"></i>
                         </div>
                         <div class="ml-3">
-                            <p class="text-sm text-yellow-700">
-                                <strong>Using A-CLAT as Guest:</strong> Your analyses will be available for 24 hours. 
-                                <a href="#" onclick="showRegisterModal()" class="underline font-semibold">Create a free account</a> to permanently save your work and access collaboration features.
+                            <p class="text-sm text-gray-800">
+                                <strong class="text-yellow-800">Using A-CLAT as Guest:</strong> Your analyses will be available for 24 hours. 
+                                <a href="#" onclick="showRegisterModal()" class="underline font-bold text-purple-700 hover:text-purple-900 transition-colors">Create a free account</a> to permanently save your work and access collaboration features.
                             </p>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Two-column layout for upload and results -->
+                <!-- Modern Two-column layout with Glass Effect -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Left Column: Upload Form -->
-                    <div class="bg-white rounded-xl shadow-lg p-6">
-                        <h2 class="text-xl font-semibold mb-4 text-gray-800">
-                            <i class="fas fa-upload mr-2 text-blue-500"></i>
+                    <!-- Left Column: Upload Form with Glass Effect -->
+                    <div class="glass rounded-2xl p-6 shadow-xl feature-card fade-in" style="animation-delay: 0.2s;">
+                        <h2 class="text-2xl font-bold mb-6 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                            <i class="fas fa-upload mr-3 text-blue-600"></i>
                             Data Upload & Variable Selection
                         </h2>
                         
@@ -1485,16 +1656,18 @@ app.get('/', (c) => {
                                 </label>
                                 <input type="file" id="fileInput" accept=".nc,.grib,.grib2,.netcdf"
                                     onchange="extractVariables()"
-                                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4
-                                        file:rounded-full file:border-0 file:text-sm file:font-semibold
-                                        file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" required />
+                                    class="block w-full text-sm text-gray-700 file:mr-4 file:py-3 file:px-6
+                                        file:rounded-xl file:border-0 file:text-sm file:font-semibold
+                                        file:bg-gradient-to-r file:from-blue-500 file:to-purple-600 file:text-white
+                                        hover:file:from-blue-600 hover:file:to-purple-700 file:shadow-md hover:file:shadow-lg
+                                        file:transition-all file:cursor-pointer" required />
                             </div>
                             
                             <!-- Variable Selection Section (initially hidden) -->
                             <div id="variableSection" class="hidden space-y-4">
-                                <div class="bg-blue-50 border-l-4 border-blue-400 p-3">
-                                    <p class="text-sm text-blue-700">
-                                        <i class="fas fa-check-circle mr-2"></i>
+                                <div class="glass bg-gradient-to-r from-green-50/80 to-blue-50/80 border-l-4 border-green-500 p-4 rounded-lg">
+                                    <p class="text-sm text-green-800 font-medium">
+                                        <i class="fas fa-check-circle mr-2 text-green-600"></i>
                                         Variables extracted successfully!
                                     </p>
                                 </div>
@@ -1503,12 +1676,12 @@ app.get('/', (c) => {
                                     <label class="block text-sm font-medium text-gray-700 mb-2">
                                         Select Variable for Analysis
                                     </label>
-                                    <select id="variableSelect" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <select id="variableSelect" class="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white/80 backdrop-blur-sm transition-all">
                                         <!-- Options will be dynamically added here -->
                                     </select>
                                 </div>
                                 
-                                <div id="variableInfo" class="bg-gray-50 p-4 rounded-lg">
+                                <div id="variableInfo" class="glass bg-gradient-to-br from-gray-50/50 to-purple-50/50 p-4 rounded-xl border border-purple-100">
                                     <!-- Variable details will be shown here -->
                                 </div>
                                 
@@ -1535,8 +1708,9 @@ app.get('/', (c) => {
                             </div>
                             
                             <button type="submit" id="analyzeButton"
-                                class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold
-                                    hover:bg-blue-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                class="w-full btn-primary py-4 px-6 rounded-xl font-bold text-lg
+                                    transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed
+                                    shadow-lg hover:shadow-2xl transform hover:-translate-y-1"
                                 disabled>
                                 <i class="fas fa-play-circle mr-2"></i>
                                 Select a file to begin analysis
@@ -1549,12 +1723,14 @@ app.get('/', (c) => {
                         </div>
                     </div>
                     
-                    <!-- Right Column: Results (initially shows placeholder) -->
-                    <div class="bg-white rounded-xl shadow-lg p-6">
-                        <div id="resultsPlaceholder" class="flex flex-col items-center justify-center h-full min-h-[400px] text-gray-400">
-                            <i class="fas fa-chart-line text-6xl mb-4"></i>
-                            <p class="text-lg font-medium">Analysis Results Will Appear Here</p>
-                            <p class="text-sm mt-2">Upload a file and select a variable to begin</p>
+                    <!-- Right Column: Results with Glass Effect -->
+                    <div class="glass rounded-2xl p-6 shadow-xl feature-card fade-in" style="animation-delay: 0.3s;">
+                        <div id="resultsPlaceholder" class="flex flex-col items-center justify-center h-full min-h-[400px]">
+                            <div class="text-center">
+                                <i class="fas fa-chart-line text-7xl mb-4 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent"></i>
+                                <p class="text-xl font-bold text-gray-800">Analysis Results Will Appear Here</p>
+                                <p class="text-sm mt-2 text-gray-600">Upload a file and select a variable to begin</p>
+                            </div>
                         </div>
                         
                         <div id="resultsSection" class="hidden">
@@ -1563,44 +1739,44 @@ app.get('/', (c) => {
                     </div>
                 </div>
                 
-                <!-- Full-width Plots Section (below the two-column layout) -->
-                <div id="plotsSection" class="hidden mt-6">
-                    <div class="bg-white rounded-xl shadow-lg p-6">
-                        <h2 class="text-xl font-semibold mb-4 text-gray-800">
-                            <i class="fas fa-chart-line mr-2 text-blue-500"></i>
+                <!-- Modern Full-width Plots Section with Glass Effect -->
+                <div id="plotsSection" class="hidden mt-6 fade-in">
+                    <div class="glass rounded-2xl p-6 shadow-xl">
+                        <h2 class="text-2xl font-bold mb-6 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                            <i class="fas fa-chart-line mr-3 text-purple-600"></i>
                             Data Visualization & Analysis
                         </h2>
                         
-                        <!-- Plot Controls -->
-                        <div class="mb-4 flex flex-wrap gap-2">
-                            <button onclick="showPlot('timeseries')" class="plot-btn px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
-                                <i class="fas fa-chart-line mr-1"></i>Time Series
+                        <!-- Modern Plot Controls with Gradient Buttons -->
+                        <div class="mb-6 flex flex-wrap gap-3">
+                            <button onclick="showPlot('timeseries')" class="plot-btn px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all">
+                                <i class="fas fa-chart-line mr-2"></i>Time Series
                             </button>
-                            <button onclick="showPlot('spatial')" class="plot-btn px-3 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700">
-                                <i class="fas fa-map mr-1"></i>Spatial
+                            <button onclick="showPlot('spatial')" class="plot-btn px-4 py-2 bg-gradient-to-r from-gray-500 to-gray-700 text-white text-sm rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all">
+                                <i class="fas fa-map mr-2"></i>Spatial
                             </button>
-                            <button onclick="showPlot('contour')" class="plot-btn px-3 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700">
-                                <i class="fas fa-layer-group mr-1"></i>Contour
+                            <button onclick="showPlot('contour')" class="plot-btn px-4 py-2 bg-gradient-to-r from-gray-500 to-gray-700 text-white text-sm rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all">
+                                <i class="fas fa-layer-group mr-2"></i>Contour
                             </button>
-                            <button onclick="showPlot('vertical')" class="plot-btn px-3 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700">
-                                <i class="fas fa-arrows-alt-v mr-1"></i>Vertical Profile
+                            <button onclick="showPlot('vertical')" class="plot-btn px-4 py-2 bg-gradient-to-r from-gray-500 to-gray-700 text-white text-sm rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all">
+                                <i class="fas fa-arrows-alt-v mr-2"></i>Vertical Profile
                             </button>
-                            <button onclick="showPlot('scatter')" class="plot-btn px-3 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700">
-                                <i class="fas fa-braille mr-1"></i>Scatter
+                            <button onclick="showPlot('scatter')" class="plot-btn px-4 py-2 bg-gradient-to-r from-gray-500 to-gray-700 text-white text-sm rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all">
+                                <i class="fas fa-braille mr-2"></i>Scatter
                             </button>
-                            <button onclick="showPlot('windrose')" class="plot-btn px-3 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700">
-                                <i class="fas fa-compass mr-1"></i>Wind Rose
+                            <button onclick="showPlot('windrose')" class="plot-btn px-4 py-2 bg-gradient-to-r from-gray-500 to-gray-700 text-white text-sm rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all">
+                                <i class="fas fa-compass mr-2"></i>Wind Rose
                             </button>
-                            <button onclick="showPlot('histogram')" class="plot-btn px-3 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700">
-                                <i class="fas fa-chart-bar mr-1"></i>Histogram
+                            <button onclick="showPlot('histogram')" class="plot-btn px-4 py-2 bg-gradient-to-r from-gray-500 to-gray-700 text-white text-sm rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all">
+                                <i class="fas fa-chart-bar mr-2"></i>Histogram
                             </button>
-                            <button onclick="showPlot('animation')" class="plot-btn px-3 py-2 bg-purple-600 text-white text-sm rounded hover:bg-purple-700">
-                                <i class="fas fa-film mr-1"></i>Animation
+                            <button onclick="showPlot('animation')" class="plot-btn px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white text-sm rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all">
+                                <i class="fas fa-film mr-2"></i>Animation
                             </button>
                         </div>
                         
-                        <!-- Plot Container -->
-                        <div id="plotContainer" style="width: 100%; height: 500px;">
+                        <!-- Modern Plot Container with Border -->
+                        <div id="plotContainer" class="bg-white/50 backdrop-blur-sm rounded-xl p-4 border-2 border-purple-200" style="width: 100%; height: 500px;">
                             <!-- Plotly charts will be rendered here -->
                         </div>
                         
@@ -1624,17 +1800,17 @@ app.get('/', (c) => {
                 </div>
             </div>
 
-            <!-- Search Tab Content -->
-            <div id="searchContent" class="tab-content hidden">
-                <div class="bg-white rounded-xl shadow-lg p-8">
-                    <h2 class="text-2xl font-semibold mb-6 text-gray-800">
-                        <i class="fas fa-search mr-2 text-green-500"></i>
+            <!-- Modern Search Tab Content -->
+            <div id="searchContent" class="tab-content hidden fade-in">
+                <div class="glass rounded-2xl p-8 shadow-xl">
+                    <h2 class="text-3xl font-bold mb-6 bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
+                        <i class="fas fa-search mr-3 text-green-600"></i>
                         Advanced Search
                     </h2>
                     <div class="grid grid-cols-2 gap-4">
                         <input type="text" id="searchQuery" placeholder="Search analyses..." 
-                            class="px-4 py-2 border rounded-lg">
-                        <select id="searchClassification" class="px-4 py-2 border rounded-lg">
+                            class="px-4 py-3 border-2 border-green-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white/80 backdrop-blur-sm">
+                        <select id="searchClassification" class="px-4 py-3 border-2 border-green-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white/80 backdrop-blur-sm">
                             <option value="">All Classifications</option>
                             <option value="Supercell">Supercell</option>
                             <option value="MCS">MCS</option>
@@ -1648,18 +1824,18 @@ app.get('/', (c) => {
                         <input type="date" id="searchDateFrom" class="px-4 py-2 border rounded-lg">
                         <input type="date" id="searchDateTo" class="px-4 py-2 border rounded-lg">
                     </div>
-                    <button onclick="performSearch()" class="mt-4 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                    <button onclick="performSearch()" class="mt-4 px-8 py-3 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transform transition-all hover:-translate-y-1">
                         <i class="fas fa-search mr-2"></i>Search
                     </button>
                     <div id="searchResults" class="mt-6"></div>
                 </div>
             </div>
 
-            <!-- Alerts Tab Content -->
-            <div id="alertsContent" class="tab-content hidden">
-                <div class="bg-white rounded-xl shadow-lg p-8">
-                    <h2 class="text-2xl font-semibold mb-6 text-gray-800">
-                        <i class="fas fa-bell mr-2 text-red-500"></i>
+            <!-- Modern Alerts Tab Content -->
+            <div id="alertsContent" class="tab-content hidden fade-in">
+                <div class="glass rounded-2xl p-8 shadow-xl">
+                    <h2 class="text-3xl font-bold mb-6 bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent">
+                        <i class="fas fa-bell mr-3 text-red-600"></i>
                         Weather Alerts
                     </h2>
                     <div class="flex justify-between items-center mb-4">
@@ -1756,13 +1932,13 @@ app.get('/', (c) => {
             </footer>
         </div>
 
-        <!-- Login Modal -->
-        <div id="loginModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
-            <div class="bg-white p-8 rounded-lg w-96">
-                <h3 class="text-xl font-bold mb-4">Login</h3>
+        <!-- Modern Login Modal with Glass Effect -->
+        <div id="loginModal" class="hidden fixed inset-0 modal-overlay bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+            <div class="glass rounded-2xl p-8 w-96 shadow-2xl transform scale-95 fade-in">
+                <h3 class="text-2xl font-bold mb-6 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent text-center">Welcome Back</h3>
                 
-                <!-- Google Sign In Button -->
-                <button onclick="googleSignIn('login')" class="w-full px-4 py-2 mb-4 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center justify-center">
+                <!-- Modern Google Sign In Button -->
+                <button onclick="googleSignIn('login')" class="w-full px-4 py-3 mb-4 glass border-2 border-gray-200 text-gray-700 rounded-xl hover:bg-white/80 flex items-center justify-center shadow-md hover:shadow-lg transform transition-all hover:-translate-y-0.5">
                     <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
                         <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
                         <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
@@ -1781,17 +1957,17 @@ app.get('/', (c) => {
                     </div>
                 </div>
                 
-                <input type="email" id="loginEmail" placeholder="Email" class="w-full px-4 py-2 mb-3 border rounded-lg">
-                <input type="password" id="loginPassword" placeholder="Password" class="w-full px-4 py-2 mb-4 border rounded-lg">
-                <button onclick="login()" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Login</button>
-                <button onclick="closeModal('loginModal')" class="w-full mt-2 px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400">Cancel</button>
+                <input type="email" id="loginEmail" placeholder="Email" class="w-full px-4 py-3 mb-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white/80 backdrop-blur-sm">
+                <input type="password" id="loginPassword" placeholder="Password" class="w-full px-4 py-3 mb-4 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white/80 backdrop-blur-sm">
+                <button onclick="login()" class="w-full px-4 py-3 btn-primary rounded-xl font-semibold shadow-lg mb-2">Login</button>
+                <button onclick="closeModal('loginModal')" class="w-full px-4 py-3 bg-gradient-to-r from-gray-400 to-gray-600 text-white rounded-xl hover:from-gray-500 hover:to-gray-700 font-semibold shadow-md">Cancel</button>
             </div>
         </div>
 
-        <!-- Register Modal -->
-        <div id="registerModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
-            <div class="bg-white p-8 rounded-lg w-96">
-                <h3 class="text-xl font-bold mb-4">Register</h3>
+        <!-- Modern Register Modal with Glass Effect -->
+        <div id="registerModal" class="hidden fixed inset-0 modal-overlay bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+            <div class="glass rounded-2xl p-8 w-96 shadow-2xl transform scale-95 fade-in">
+                <h3 class="text-2xl font-bold mb-6 bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent text-center">Create Account</h3>
                 
                 <!-- Google Sign Up Button -->
                 <button onclick="googleSignIn('register')" class="w-full px-4 py-2 mb-4 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center justify-center">
@@ -1813,12 +1989,12 @@ app.get('/', (c) => {
                     </div>
                 </div>
                 
-                <input type="email" id="regEmail" placeholder="Email" class="w-full px-4 py-2 mb-3 border rounded-lg">
-                <input type="text" id="regUsername" placeholder="Username" class="w-full px-4 py-2 mb-3 border rounded-lg">
-                <input type="password" id="regPassword" placeholder="Password" class="w-full px-4 py-2 mb-3 border rounded-lg">
-                <input type="text" id="regFullName" placeholder="Full Name (optional)" class="w-full px-4 py-2 mb-4 border rounded-lg">
-                <button onclick="register()" class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Register</button>
-                <button onclick="closeModal('registerModal')" class="w-full mt-2 px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400">Cancel</button>
+                <input type="email" id="regEmail" placeholder="Email" class="w-full px-4 py-3 mb-3 border-2 border-green-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white/80 backdrop-blur-sm">
+                <input type="text" id="regUsername" placeholder="Username" class="w-full px-4 py-3 mb-3 border-2 border-green-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white/80 backdrop-blur-sm">
+                <input type="password" id="regPassword" placeholder="Password" class="w-full px-4 py-3 mb-3 border-2 border-green-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white/80 backdrop-blur-sm">
+                <input type="text" id="regFullName" placeholder="Full Name (optional)" class="w-full px-4 py-3 mb-4 border-2 border-green-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white/80 backdrop-blur-sm">
+                <button onclick="register()" class="w-full px-4 py-3 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-xl font-semibold shadow-lg mb-2">Register</button>
+                <button onclick="closeModal('registerModal')" class="w-full px-4 py-3 bg-gradient-to-r from-gray-400 to-gray-600 text-white rounded-xl hover:from-gray-500 hover:to-gray-700 font-semibold shadow-md">Cancel</button>
             </div>
         </div>
 
@@ -1846,9 +2022,10 @@ app.get('/', (c) => {
                     const content = document.getElementById(contentId);
                     
                     if (tab === tabName) {
-                        btn.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
-                        btn.classList.remove('text-gray-600');
+                        btn.classList.add('active', 'text-purple-700');
+                        btn.classList.remove('text-gray-700');
                         content.classList.remove('hidden');
+                        content.classList.add('fade-in');
                         
                         // Load tab-specific data
                         if (tab === 'history') loadHistory();
@@ -1856,24 +2033,40 @@ app.get('/', (c) => {
                         if (tab === 'collab') loadCollaborations();
                         if (tab === '3d' && currentAnalysisData) generate3DView();
                     } else {
-                        btn.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
-                        btn.classList.add('text-gray-600');
+                        btn.classList.remove('active', 'text-purple-700');
+                        btn.classList.add('text-gray-700');
                         content.classList.add('hidden');
+                        content.classList.remove('fade-in');
                     }
                 });
             }
 
             // Authentication
             function showLoginModal() {
-                document.getElementById('loginModal').classList.remove('hidden');
+                const modal = document.getElementById('loginModal');
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modal.querySelector('.glass').classList.add('scale-100');
+                    modal.querySelector('.glass').classList.remove('scale-95');
+                }, 10);
             }
 
             function showRegisterModal() {
-                document.getElementById('registerModal').classList.remove('hidden');
+                const modal = document.getElementById('registerModal');
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modal.querySelector('.glass').classList.add('scale-100');
+                    modal.querySelector('.glass').classList.remove('scale-95');
+                }, 10);
             }
 
             function closeModal(modalId) {
-                document.getElementById(modalId).classList.add('hidden');
+                const modal = document.getElementById(modalId);
+                modal.querySelector('.glass').classList.add('scale-95');
+                modal.querySelector('.glass').classList.remove('scale-100');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
             }
             
             // Variable extraction from uploaded file
@@ -2211,19 +2404,23 @@ app.get('/', (c) => {
                 
                 if (currentUser) {
                     authSection.innerHTML = \`
-                        <span class="mr-4">Welcome, \${currentUser.username}</span>
-                        <button onclick="logout()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
-                            <i class="fas fa-sign-out-alt mr-2"></i>Logout
-                        </button>
+                        <div class="flex items-center space-x-4">
+                            <div class="glass px-4 py-2 rounded-xl">
+                                <span class="text-gray-700">Welcome, <strong class="text-purple-700">\${currentUser.username}</strong></span>
+                            </div>
+                            <button onclick="logout()" class="px-6 py-3 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transform transition-all hover:-translate-y-1">
+                                <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                            </button>
+                        </div>
                     \`;
                     // Hide anonymous notice when logged in
                     if (anonymousNotice) anonymousNotice.classList.add('hidden');
                 } else {
                     authSection.innerHTML = \`
-                        <button onclick="showLoginModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        <button onclick="showLoginModal()" class="px-6 py-3 btn-primary rounded-xl font-semibold mr-3 shadow-lg">
                             <i class="fas fa-sign-in-alt mr-2"></i>Login
                         </button>
-                        <button onclick="showRegisterModal()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 ml-2">
+                        <button onclick="showRegisterModal()" class="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transform transition-all hover:-translate-y-1">
                             <i class="fas fa-user-plus mr-2"></i>Register
                         </button>
                     \`;
