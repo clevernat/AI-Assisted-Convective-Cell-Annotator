@@ -85,14 +85,20 @@
 
 ## Features
 
-### ✅ Currently Completed
+### ✅ Currently Completed (Version 2.0)
 - File upload interface for NetCDF/GRIB files
-- Simulated cell tracking algorithm
-- AI classification system (5 storm types)
-- Interactive Plotly.js visualizations
-- Responsive UI with TailwindCSS
-- RESTful API endpoints
+- Enhanced cell tracking algorithm with realistic physics
+- AI classification system (5 storm types) with hazard assessment
+- Interactive Plotly.js visualizations (2D and 3D)
+- Responsive UI with TailwindCSS and tabbed interface
+- RESTful API endpoints with export functionality
 - Health check monitoring
+- D1 database integration for history tracking
+- CSV/JSON export functionality
+- 3D storm structure visualization
+- Enhanced storm motion and properties tracking
+- Hazard assessment with multiple risk categories
+- Analysis history with persistent storage
 
 ### 📋 Features Not Yet Implemented
 - Actual NetCDF/GRIB file parsing (currently simulated)
@@ -165,9 +171,10 @@ python app.py
 
 ## Status
 - **Platform**: Cloudflare Pages
-- **Status**: ✅ Running Live
+- **Status**: ✅ Enhanced Version 2.0 Running Live
 - **Demo URL**: https://3000-iiqzr0hiif3i299iwltsl-b32ec7bb.sandbox.novita.ai
 - **Last Updated**: 2025-10-26
+- **Version**: 2.0.0 (Enhanced)
 - **Backup**: Available at https://page.gensparksite.com/project_backups/a-clat-backup.tar.gz
 
 ## License
