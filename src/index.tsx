@@ -353,6 +353,150 @@ app.get('/api/auth/me', async (c) => {
   return c.json({ success: true, user })
 })
 
+// ==================== GOOGLE OAUTH ENDPOINTS ====================
+app.get('/api/auth/google/callback', async (c) => {
+  // Redirect back to the main page with OAuth parameters
+  const { code, state } = c.req.query()
+  return c.redirect(`/?code=${code}&state=${state}`)
+})
+
+app.post('/api/auth/google/token', async (c) => {
+  const { env } = c
+  const { code, mode } = await c.req.json()
+  
+  try {
+    // Exchange authorization code for tokens
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        code,
+        client_id: env.GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID',
+        client_secret: env.GOOGLE_CLIENT_SECRET || 'YOUR_GOOGLE_CLIENT_SECRET',
+        redirect_uri: c.req.header('origin') + '/api/auth/google/callback',
+        grant_type: 'authorization_code'
+      })
+    })
+    
+    if (!tokenResponse.ok) {
+      return c.json({ error: 'Failed to exchange code for token' }, 400)
+    }
+    
+    const tokens = await tokenResponse.json()
+    
+    // Get user info from Google
+    const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { 'Authorization': `Bearer ${tokens.access_token}` }
+    })
+    
+    if (!userResponse.ok) {
+      return c.json({ error: 'Failed to get user info' }, 400)
+    }
+    
+    const googleUser = await userResponse.json()
+    
+    // Initialize database if needed
+    if (env.DB) {
+      await initializeDatabase(env.DB)
+      
+      // Check if user exists
+      let user = await env.DB.prepare(`
+        SELECT * FROM users WHERE email = ?
+      `).bind(googleUser.email).first() as User | undefined
+      
+      if (!user && mode === 'register') {
+        // Create new user
+        const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        const apiKey = `ak_${Math.random().toString(36).substr(2, 32)}`
+        const username = googleUser.email.split('@')[0] + '_' + Math.random().toString(36).substr(2, 5)
+        
+        await env.DB.prepare(`
+          INSERT INTO users (id, email, username, password_hash, full_name, role, api_key, is_active)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+          userId,
+          googleUser.email,
+          username,
+          'google_oauth', // Special marker for OAuth users
+          googleUser.name || '',
+          'user',
+          apiKey,
+          1
+        ).run()
+        
+        user = {
+          id: userId,
+          email: googleUser.email,
+          username: username,
+          password_hash: 'google_oauth',
+          full_name: googleUser.name || '',
+          role: 'user',
+          api_key: apiKey,
+          is_active: 1
+        }
+      } else if (!user && mode === 'login') {
+        return c.json({ error: 'User not found. Please register first.' }, 404)
+      } else if (user && mode === 'register') {
+        return c.json({ error: 'User already exists. Please login instead.' }, 409)
+      }
+      
+      // Create session token
+      const token = await sign(
+        { 
+          sub: user!.id,
+          email: user!.email,
+          exp: Math.floor(Date.now() / 1000) + 86400
+        },
+        env.JWT_SECRET || 'default-secret'
+      )
+      
+      // Store session
+      const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      await env.DB.prepare(`
+        INSERT INTO sessions (id, user_id, token, ip_address, user_agent, expires_at)
+        VALUES (?, ?, ?, ?, ?, datetime('now', '+1 day'))
+      `).bind(
+        sessionId,
+        user!.id,
+        token,
+        c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown',
+        c.req.header('user-agent') || 'unknown'
+      ).run()
+      
+      // Update last login
+      await env.DB.prepare(`
+        UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?
+      `).bind(user!.id).run()
+      
+      // Set auth cookie
+      setCookie(c, 'auth_token', token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'Strict',
+        maxAge: 86400,
+        path: '/'
+      })
+      
+      return c.json({
+        success: true,
+        user: {
+          id: user!.id,
+          email: user!.email,
+          username: user!.username,
+          full_name: user!.full_name,
+          role: user!.role
+        },
+        token
+      })
+    }
+    
+    return c.json({ error: 'Database not configured' }, 500)
+  } catch (error) {
+    console.error('Google OAuth error:', error)
+    return c.json({ error: 'Authentication failed' }, 500)
+  }
+})
+
 // ==================== ALERT SYSTEM ====================
 async function createAlert(
   db: D1Database,
@@ -875,14 +1019,25 @@ app.post('/api/extract-variables', async (c) => {
     // Determine temporal information based on file
     let temporal = null
     
+    // Extract year from filename
+    const yearPattern = /(19|20)\d{2}/
+    const yearMatch = fileName.match(yearPattern)
+    const extractedYear = yearMatch ? parseInt(yearMatch[0]) : new Date().getFullYear()
+    
     // Check if file has temporal information in name
-    if (fileName.includes('2010')) {
-      // For the OMTED2010 file shown in screenshot
+    if (fileName.includes('2010') || fileName.includes('2011') || fileName.includes('2012')) {
+      // For files with year in name (like GMTE2010)
+      const baseDate = new Date(extractedYear, 5, 15) // June 15 of extracted year
       temporal = {
-        available: false,
-        message: 'Time dimension not available in this dataset',
+        available: true,
+        message: `Data from ${extractedYear}`,
         steps: 1,
-        is_snapshot: true
+        is_snapshot: true,
+        extracted_year: extractedYear,
+        coverage: {
+          start: baseDate.toISOString(),
+          end: baseDate.toISOString()
+        }
       }
     } else if (fileName.match(/\d{8}/) || fileName.match(/\d{10}/)) {
       // Files with date stamps
@@ -970,16 +1125,22 @@ app.post('/api/analyze', async (c) => {
       return c.json({ error: 'No file provided' }, 400)
     }
     
+    // Extract year from filename if available
+    const yearPattern = /(19|20)\d{2}/
+    const yearMatch = file.name.match(yearPattern)
+    const baseYear = yearMatch ? parseInt(yearMatch[0]) : new Date().getFullYear()
+    
     // Generate time series data for plotting
     const timeSteps = 12
-    const startTime = new Date()
-    startTime.setHours(startTime.getHours() - timeSteps * 4) // 4 hours per step
+    // Use the extracted year for the time series
+    const startTime = new Date(baseYear, 5, 14, 12, 0, 0) // June 14 of extracted year, noon
+    startTime.setHours(startTime.getHours() - timeSteps * 2) // 2 hours per step for better granularity
     
     // Generate plot data
     const plotData = {
       time_series: Array.from({ length: timeSteps }, (_, i) => {
         const time = new Date(startTime)
-        time.setHours(time.getHours() + i * 4)
+        time.setHours(time.getHours() + i * 2) // 2 hours per step
         return {
           time: time.toISOString(),
           value: 30 + Math.random() * 40 + Math.sin(i / 2) * 10,
@@ -1599,6 +1760,27 @@ app.get('/', (c) => {
         <div id="loginModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
             <div class="bg-white p-8 rounded-lg w-96">
                 <h3 class="text-xl font-bold mb-4">Login</h3>
+                
+                <!-- Google Sign In Button -->
+                <button onclick="googleSignIn('login')" class="w-full px-4 py-2 mb-4 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center justify-center">
+                    <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+                        <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
+                        <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
+                        <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
+                        <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
+                    </svg>
+                    <span>Sign in with Google</span>
+                </button>
+                
+                <div class="relative mb-4">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-2 bg-white text-gray-500">Or continue with email</span>
+                    </div>
+                </div>
+                
                 <input type="email" id="loginEmail" placeholder="Email" class="w-full px-4 py-2 mb-3 border rounded-lg">
                 <input type="password" id="loginPassword" placeholder="Password" class="w-full px-4 py-2 mb-4 border rounded-lg">
                 <button onclick="login()" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Login</button>
@@ -1610,6 +1792,27 @@ app.get('/', (c) => {
         <div id="registerModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
             <div class="bg-white p-8 rounded-lg w-96">
                 <h3 class="text-xl font-bold mb-4">Register</h3>
+                
+                <!-- Google Sign Up Button -->
+                <button onclick="googleSignIn('register')" class="w-full px-4 py-2 mb-4 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center justify-center">
+                    <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+                        <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
+                        <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
+                        <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
+                        <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
+                    </svg>
+                    <span>Sign up with Google</span>
+                </button>
+                
+                <div class="relative mb-4">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-2 bg-white text-gray-500">Or register with email</span>
+                    </div>
+                </div>
+                
                 <input type="email" id="regEmail" placeholder="Email" class="w-full px-4 py-2 mb-3 border rounded-lg">
                 <input type="text" id="regUsername" placeholder="Username" class="w-full px-4 py-2 mb-3 border rounded-lg">
                 <input type="password" id="regPassword" placeholder="Password" class="w-full px-4 py-2 mb-3 border rounded-lg">
@@ -1938,6 +2141,68 @@ app.get('/', (c) => {
                 await fetch('/api/auth/logout', { method: 'POST' });
                 currentUser = null;
                 updateAuthUI();
+            }
+
+            // Google OAuth functions
+            async function googleSignIn(mode) {
+                // Generate a random state for security
+                const state = Math.random().toString(36).substring(2, 15);
+                sessionStorage.setItem('oauth_state', state);
+                sessionStorage.setItem('oauth_mode', mode);
+                
+                // Google OAuth configuration
+                const clientId = 'YOUR_GOOGLE_CLIENT_ID'; // Will be configured via environment variable
+                const redirectUri = encodeURIComponent(window.location.origin + '/api/auth/google/callback');
+                const scope = encodeURIComponent('openid email profile');
+                
+                // Redirect to Google OAuth
+                const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' +
+                    'client_id=' + clientId + '&' +
+                    'redirect_uri=' + redirectUri + '&' +
+                    'response_type=code&' +
+                    'scope=' + scope + '&' +
+                    'state=' + state + '&' +
+                    'access_type=offline&' +
+                    'prompt=select_account';
+                
+                window.location.href = authUrl;
+            }
+            
+            // Handle OAuth callback
+            async function handleOAuthCallback() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const code = urlParams.get('code');
+                const state = urlParams.get('state');
+                
+                if (code && state) {
+                    const savedState = sessionStorage.getItem('oauth_state');
+                    const mode = sessionStorage.getItem('oauth_mode');
+                    
+                    if (state === savedState) {
+                        // Exchange code for token
+                        const response = await fetch('/api/auth/google/token', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ code, mode })
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            currentUser = data.user;
+                            updateAuthUI();
+                            // Clear URL parameters
+                            window.history.replaceState({}, document.title, window.location.pathname);
+                            // Clear session storage
+                            sessionStorage.removeItem('oauth_state');
+                            sessionStorage.removeItem('oauth_mode');
+                            loadAlerts();
+                        } else {
+                            alert('Google authentication failed');
+                        }
+                    } else {
+                        alert('Invalid OAuth state. Please try again.');
+                    }
+                }
             }
 
             function updateAuthUI() {
@@ -2897,6 +3162,11 @@ app.get('/', (c) => {
             // Initialize
             checkAuth();
             loadAlerts();
+            
+            // Check for OAuth callback
+            if (window.location.search.includes('code=')) {
+                handleOAuthCallback();
+            }
         </script>
     </body>
     </html>

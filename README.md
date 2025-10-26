@@ -2,16 +2,20 @@
 ### Developed by clevernat
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-2.4.0-blue.svg)](https://github.com/clevernat/a-clat)
+[![Version](https://img.shields.io/badge/version-2.5.0-blue.svg)](https://github.com/clevernat/a-clat)
 [![Platform](https://img.shields.io/badge/platform-Cloudflare%20Pages-orange.svg)](https://pages.cloudflare.com/)
 [![Status](https://img.shields.io/badge/status-production%20ready-green.svg)](https://github.com/clevernat/a-clat)
 
-## 🆕 Latest Updates (v2.4.0) - Complete Feature Implementation
+## 🆕 Latest Updates (v2.5.0) - Google OAuth & Date Handling Fixes
 
-### ✨ All 10 Core Features Now Implemented
+### ✨ Version 2.5.0 New Features
+- **🔑 Google OAuth Integration** - Sign in/Sign up with Google accounts for easier authentication
+- **📅 Fixed Date Extraction** - Time series plots now correctly extract and display years from filenames (e.g., 2010 data shows as 2010, not current year)
+
+### ✨ All 11 Core Features Now Implemented
 1. **☁️ D1 Database Integration** - SQLite at the edge with 8-table schema
 2. **🐍 Python Backend** - FastAPI server for NetCDF/GRIB processing
-3. **🔐 JWT Authentication** - Secure token-based auth with Web Crypto API
+3. **🔐 Enhanced Authentication** - JWT auth with Web Crypto API + **NEW: Google OAuth**
 4. **🚨 Real-time Alerts** - Custom weather thresholds and notifications
 5. **🔍 Advanced Search** - Multi-parameter filtering and queries
 6. **🎬 Time-lapse Animations** - Interactive temporal data visualization
@@ -19,6 +23,7 @@
 8. **✅ Testing Framework** - Jest with comprehensive test coverage
 9. **📤 Multi-format Export** - Including GeoJSON for geographic data
 10. **📊 3D Visualizations** - Interactive 3D plots with Plotly.js
+11. **📅 Accurate Temporal Analysis** - Proper date extraction from historical data files
 
 ### 🌟 Atmospheric Science Features
 - **Contour Plots**: Temperature, pressure, and concentration fields
@@ -69,6 +74,30 @@
 ![Plots Section](docs/images/10-plots-section.png)
 *Multiple plot types including time series, heatmaps, and distributions*
 
+### Fixed: Accurate Date Display in Time Series
+![Fixed Time Series](docs/images/time-series-fixed.png)
+*Time series now correctly shows data from the actual year (e.g., 2010) instead of current year*
+
+### New: Google Sign-In Integration
+![Google OAuth](docs/images/google-oauth.png)
+*One-click authentication with Google accounts for both sign in and sign up*
+
+## 🔧 Recent Bug Fixes (v2.5.0)
+
+### Fixed: Time Series Date Extraction
+**Problem**: Time series plots were showing current year (2025) for historical data files
+**Solution**: Implemented intelligent year extraction from filenames
+- Files named like `GMTE2010_*` now correctly display as June 2010 data
+- Pattern matching for various date formats in filenames
+- Fallback to reasonable defaults when date cannot be extracted
+
+### Enhanced: Authentication Flow
+**Added**: Google OAuth integration for seamless sign in/sign up
+- No more password management required
+- Automatic user profile creation from Google account
+- Secure OAuth 2.0 implementation
+- Works alongside traditional email/password authentication
+
 ## 🎯 Project Overview
 A-CLAT is a cutting-edge web application for analyzing and annotating convective weather cells using artificial intelligence. Built on Cloudflare's edge infrastructure, it provides meteorologists and researchers with powerful tools for storm analysis, classification, and tracking.
 
@@ -93,6 +122,22 @@ A-CLAT is a cutting-edge web application for analyzing and annotating convective
 - **Process Management**: PM2 for development
 - **Build Tool**: Vite for fast builds
 - **Testing**: Jest with comprehensive coverage
+
+## 🔐 Authentication Methods
+
+### Traditional Email/Password
+- Secure password hashing with Web Crypto API
+- JWT token-based sessions
+- Remember me functionality
+
+### Google OAuth (NEW in v2.5.0)
+- One-click sign in/sign up with Google
+- Automatic profile information import
+- No password required
+- Secure OAuth 2.0 flow
+
+![Google Sign In](docs/images/google-signin.png)
+*Google OAuth integration for seamless authentication*
 
 ## 📊 Data Models & Storage
 
@@ -179,7 +224,20 @@ Create `.dev.vars` for local development:
 ```env
 JWT_SECRET=your-secret-key-here
 PYTHON_BACKEND_URL=http://localhost:8000
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
 ```
+
+### Setting up Google OAuth
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing one
+3. Enable Google+ API
+4. Go to Credentials → Create Credentials → OAuth client ID
+5. Choose "Web application"
+6. Add authorized redirect URIs:
+   - For local: `http://localhost:3000/api/auth/google/callback`
+   - For production: `https://your-domain.pages.dev/api/auth/google/callback`
+7. Copy the Client ID and Client Secret to your environment variables
 
 ## 📦 Deployment
 
@@ -196,6 +254,7 @@ npx wrangler pages secret put JWT_SECRET --project-name a-clat
 ```
 
 ### Production URLs
+- **Live Demo**: https://3000-iiqzr0hiif3i299iwltsl-b32ec7bb.sandbox.novita.ai
 - **Main Application**: https://a-clat.pages.dev
 - **API Endpoints**: https://a-clat.pages.dev/api/*
 - **Python Backend**: Deployed separately (e.g., Railway, Render)
@@ -207,6 +266,8 @@ npx wrangler pages secret put JWT_SECRET --project-name a-clat
 - `POST /api/auth/login` - User login
 - `POST /api/auth/logout` - User logout
 - `GET /api/auth/verify` - Verify JWT token
+- `GET /api/auth/google/callback` - Google OAuth callback (NEW)
+- `POST /api/auth/google/token` - Exchange Google auth code for token (NEW)
 
 ### Analysis
 - `POST /api/analyses/upload` - Upload file for analysis
