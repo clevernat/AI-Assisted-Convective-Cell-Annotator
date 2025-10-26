@@ -30,6 +30,7 @@
 
 ## URLs
 - **Local Development**: http://localhost:3000
+- **Live Demo**: https://3000-iiqzr0hiif3i299iwltsl-b32ec7bb.sandbox.novita.ai
 - **Production**: Will be available after deployment to Cloudflare Pages
 - **API Endpoints**:
   - `POST /api/analyze` - Main analysis endpoint
@@ -164,8 +165,10 @@ python app.py
 
 ## Status
 - **Platform**: Cloudflare Pages
-- **Status**: ✅ Development Ready
+- **Status**: ✅ Running Live
+- **Demo URL**: https://3000-iiqzr0hiif3i299iwltsl-b32ec7bb.sandbox.novita.ai
 - **Last Updated**: 2025-10-26
+- **Backup**: Available at https://page.gensparksite.com/project_backups/a-clat-backup.tar.gz
 
 ## License
 MIT License
