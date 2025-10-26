@@ -45,39 +45,36 @@
 - **Modern Typography**: Gradient text effects for headers
 - **Interactive Elements**: Transform animations on hover
 
-### 📷 Screenshot Requirements
-> **Note**: The following modern UI screenshots need to be captured from the live demo:
-> - Visit: https://3000-iiqzr0hiif3i299iwltsl-b32ec7bb.sandbox.novita.ai
-> - Capture the glassmorphism effects and animated gradients
-> - Show the purple/blue theme and modern buttons
-> - Include Google OAuth buttons in login/register modals
+### 📷 Modern UI Screenshots
+All screenshots captured from the live application showcasing the new glassmorphism design, animated gradients, and Google OAuth integration.
+
+## 🎨 Modern UI Gallery (v2.5.0)
+
+### Complete Interface Overview
+The new v2.5.0 interface features a stunning visual redesign with glassmorphism effects throughout the application. Every element has been carefully crafted to provide a modern, elegant user experience while maintaining full functionality.
+
+#### Key Visual Enhancements:
+- **Dynamic Background**: Animated 4-color gradient that shifts smoothly
+- **Glass Effects**: Translucent panels with backdrop blur (30px)
+- **Purple/Blue Theme**: Professional gradient color scheme throughout
+- **Smooth Animations**: 0.3-0.5s transitions on all interactive elements
+- **Modern Typography**: Gradient text effects on headers and titles
+- **Enhanced Forms**: Purple focus borders and gradient buttons
+- **Professional Shadows**: Subtle drop shadows for depth perception
 
 ## 📸 Application Screenshots
 
 ### Modern Main Interface with Glassmorphism
-> 📷 **Screenshot needed**: Capture the main interface showing:
-> - Animated gradient background
-> - Glass effect header with "A-CLAT v2.5.0" title
-> - Purple/blue gradient text
-> - Modern tab navigation with glass container
-> - Upload form with gradient buttons
-
 ![Modern Main Interface](docs/images/modern-ui-main.png)
-*NEW v2.5.0: Glassmorphism effects, animated gradient background, and modern purple/blue theme*
+*NEW v2.5.0: Glassmorphism effects, animated gradient background, modern purple/blue theme with glass-effect header and gradient text*
 
 ### Classic Main Analysis Interface
 ![Main Application](docs/images/01-main-interface.png)
 *Complete analysis interface with all integrated features*
 
 ### Modern Variable Selection with Glass Effects
-> 📷 **Screenshot needed**: Show the variable selection panel with:
-> - Glass effect panels
-> - Purple border on select inputs
-> - Gradient "Analyze" button
-> - Success message with green gradient background
-
 ![Modern Variable Selection](docs/images/modern-ui-variables.png)
-*NEW v2.5.0: Glass panels, gradient buttons, and enhanced form inputs*
+*NEW v2.5.0: Glass panels with purple borders, gradient "Analyze" button, and enhanced form inputs*
 
 ### Variable Extraction with Temporal Information
 ![Variable Extraction](docs/images/02-variable-extraction.png)
@@ -119,32 +116,36 @@
 ![Plots Section](docs/images/10-plots-section.png)
 *Multiple plot types including time series, heatmaps, and distributions*
 
-### Fixed: Accurate Date Display in Time Series
-![Fixed Time Series](docs/images/time-series-fixed.png)
-*Time series now correctly shows data from the actual year (e.g., 2010) instead of current year*
+
 
 ### Modern Authentication Modals
-> 📷 **Screenshot needed**: Capture login/register modals showing:
-> - Glass effect modal backgrounds
-> - "Welcome Back" / "Create Account" gradient text
-> - Google Sign-In buttons with logo
-> - Purple/green bordered input fields
-> - Gradient action buttons
-
 ![Modern Login Modal](docs/images/modern-ui-login.png)
-*NEW v2.5.0: Glass effect modals with gradient headers and Google OAuth integration*
+*NEW v2.5.0: Glass effect modal with "Welcome Back" gradient text, Google Sign-In button, and purple-bordered inputs*
 
-### Google Sign-In Integration
-![Google OAuth Buttons](docs/images/modern-ui-google-oauth.png)
-*One-click authentication with Google accounts for both sign in and sign up*
+![Modern Register Modal](docs/images/modern-ui-register.png)
+*NEW v2.5.0: Registration modal with "Create Account" gradient header and Google OAuth integration*
+
+
 
 ### Modern Tab Navigation
 ![Modern Tabs](docs/images/modern-ui-tabs.png)
 *Glass container with active states and smooth transitions*
 
-### Modern Plot Controls
-![Modern Plot Buttons](docs/images/modern-ui-plots.png)
-*Gradient buttons with shadow effects and transform animations*
+### Modern Alerts Interface
+![Modern Alerts](docs/images/modern-ui-alerts.png)
+*NEW v2.5.0: Weather alerts with glassmorphism panels and gradient headers*
+
+### Modern History View
+![Modern History](docs/images/modern-ui-history.png)
+*NEW v2.5.0: Analysis history with glass effects and enhanced table styling*
+
+### Modern Upload Panel
+![Modern Upload Panel](docs/images/modern-ui-upload.png)
+*Gradient upload button with glass panel effects and modern form styling*
+
+### Full Application Overview
+![Modern UI Overview](docs/images/modern-ui-overview.png)
+*Complete view of the modernized A-CLAT interface with all UI enhancements*
 
 ## 🎨 UI Modernization (v2.5.0)
 
