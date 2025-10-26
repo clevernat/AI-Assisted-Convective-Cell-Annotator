@@ -1269,14 +1269,40 @@ app.post('/api/analyze', async (c) => {
       await initializeDatabase(env.DB)
     }
 
-    const formData = await c.req.formData()
-    const file = formData.get('file') as File
-    const variableName = formData.get('variable') as string || 'Z'
-    const timeRangeStart = formData.get('timeRangeStart') as string
-    const timeRangeEnd = formData.get('timeRangeEnd') as string
+    // Try to parse form data with error handling
+    let formData: FormData
+    let file: File | null = null
+    let variableName = 'Z'
+    let timeRangeStart = ''
+    let timeRangeEnd = ''
+    
+    try {
+      formData = await c.req.formData()
+      file = formData.get('file') as File
+      variableName = (formData.get('variable') as string) || 'Z'
+      timeRangeStart = (formData.get('timeRangeStart') as string) || ''
+      timeRangeEnd = (formData.get('timeRangeEnd') as string) || ''
+    } catch (parseError) {
+      console.error('FormData parsing error:', parseError)
+      return c.json({ 
+        success: false,
+        error: 'Failed to parse upload data. File may be too large or corrupted.' 
+      }, 400)
+    }
     
     if (!file) {
-      return c.json({ error: 'No file provided' }, 400)
+      return c.json({ 
+        success: false,
+        error: 'No file provided' 
+      }, 400)
+    }
+    
+    // Check file size (limit to 50MB for Cloudflare Workers)
+    if (file.size > 50 * 1024 * 1024) {
+      return c.json({ 
+        success: false,
+        error: 'File too large. Maximum size is 50MB.' 
+      }, 413)
     }
     
     // Extract year from filename if available
@@ -1383,7 +1409,12 @@ app.post('/api/analyze', async (c) => {
     return c.json(response)
   } catch (error) {
     console.error('Analysis error:', error)
-    return c.json({ error: 'Analysis failed' }, 500)
+    const errorMessage = error instanceof Error ? error.message : 'Analysis failed'
+    return c.json({ 
+      success: false,
+      error: `Analysis failed: ${errorMessage}`,
+      details: 'The file may be too large or in an unsupported format. Please try a smaller file or different format.'
+    }, 500)
   }
 })
 
@@ -2629,13 +2660,25 @@ app.get('/', (c) => {
                 if (timeRangeEnd) formData.append('timeRangeEnd', timeRangeEnd);
 
                 try {
+                    // Add timeout for large file processing
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+                    
                     const response = await fetch('/api/analyze', {
                         method: 'POST',
-                        body: formData
+                        body: formData,
+                        signal: controller.signal
                     });
+                    
+                    clearTimeout(timeoutId);
 
                     if (response.ok) {
-                        currentAnalysisData = await response.json();
+                        const data = await response.json();
+                        if (data.success === false) {
+                            alert(data.error || 'Analysis failed');
+                            return;
+                        }
+                        currentAnalysisData = data;
                         displayResults(currentAnalysisData);
                         
                         // Show plots section and create initial plot
@@ -2655,7 +2698,15 @@ app.get('/', (c) => {
                         
                         loadAlerts(); // Refresh alerts
                     } else {
-                        alert('Analysis failed');
+                        const errorData = await response.json().catch(() => ({ error: 'Analysis failed' }));
+                        alert(errorData.error || 'Analysis failed');
+                    }
+                } catch (error) {
+                    if (error.name === 'AbortError') {
+                        alert('Analysis timeout. The file may be too large or the connection is slow. Please try a smaller file.');
+                    } else {
+                        console.error('Analysis error:', error);
+                        alert('Error analyzing file. Please check your connection and try again.');
                     }
                 } finally {
                     document.getElementById('loadingSection').classList.add('hidden');
